@@ -169,7 +169,7 @@ import os
 from app.database import SessionLocal, engine
 from app.models import Base, Question
 
-DATASET_URL = "https://huggingface.co/datasets/hello-smile6/simple-qa/resolve/main/data/train-00000-of-00001.parquet"
+DATASET_URL = "https://huggingface.co/api/datasets/rajpurkar/squad/parquet/plain_text/train/0.parquet"
 
 
 def download_parquet(url: str) -> str:
