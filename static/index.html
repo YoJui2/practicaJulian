@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Questions API — Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface-hover: #222d3f;
+      --border: #2d3a4f;
+      --text: #e8edf4;
+      --muted: #8b9cb3;
+      --accent: #3dceb5;
+      --accent-dim: #2a9d87;
+      --warning: #e9a23b;
+      --error: #e07a7a;
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(61, 206, 181, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(45, 58, 79, 0.4), transparent);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    section.card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.35rem 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    section.card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    section.card .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      margin-bottom: 1rem;
+      word-break: break-all;
+    }
+
+    button,
+    a.btn {
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 1rem;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #0a0f14;
+    }
+
+    button.primary:hover {
+      background: #52e0c8;
+    }
+
+    button.secondary {
+      background: var(--surface-hover);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    a.btn {
+      display: inline-block;
+      text-decoration: none;
+      background: var(--surface-hover);
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+
+    a.btn:hover {
+      border-color: var(--accent);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    input[type="number"] {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.9rem;
+      width: 5.5rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    input[type="number"]:focus {
+      outline: 2px solid var(--accent-dim);
+      outline-offset: 2px;
+    }
+
+    pre.out {
+      margin: 0;
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .msg {
+      font-size: 0.85rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      margin-top: 0.75rem;
+    }
+
+    .msg.error {
+      background: rgba(224, 122, 122, 0.12);
+      color: var(--error);
+      border: 1px solid rgba(224, 122, 122, 0.35);
+    }
+
+    .msg.info {
+      background: rgba(61, 206, 181, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(61, 206, 181, 0.25);
+    }
+
+    .question-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    article.q {
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    article.q header {
+      margin: 0 0 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    article.q .q-text {
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+
+    article.q .a-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    article.q .a-text strong {
+      color: var(--warning);
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Questions API</h1>
+      <p>Panel para probar los mismos endpoints que en <code>paraAPI.txt</code> (mismo origen que la API).</p>
+    </header>
+
+    <div class="grid">
+      <section class="card" id="sec-root">
+        <h2>GET /</h2>
+        <p class="hint">http://localhost:8000/</p>
+        <div class="row">
+          <button type="button" class="primary" id="btn-root">Mensaje de bienvenida</button>
+        </div>
+        <pre class="out" id="out-root" hidden></pre>
+        <div class="msg error" id="err-root" hidden></div>
+      </section>
+
+      <section class="card">
+        <h2>GET /docs</h2>
+        <p class="hint">http://localhost:8000/docs</p>
+        <div class="row">
+          <a class="btn" href="/docs" target="_blank" rel="noopener">Abrir Swagger UI</a>
+        </div>
+        <p class="empty">Documentación interactiva en otra pestaña.</p>
+      </section>
+
+      <section class="card" id="sec-list">
+        <h2>GET /questions</h2>
+        <p class="hint" id="hint-list">http://localhost:8000/questions?skip=0&limit=10</p>
+        <div class="row">
+          <label>skip <input type="number" id="skip" min="0" value="0" /></label>
+          <label>limit <input type="number" id="limit" min="1" value="10" /></label>
+          <button type="button" class="primary" id="btn-list">Cargar preguntas</button>
+        </div>
+        <p class="empty" id="preset-hint">Ejemplo paginación: skip=10, limit=5 → preguntas 11 a 15.</p>
+        <div class="question-list" id="list-out"></div>
+        <div class="msg error" id="err-list" hidden></div>
+      </section>
+
+      <section class="card" id="sec-one">
+        <h2>GET /questions/{id}</h2>
+        <p class="hint" id="hint-one">http://localhost:8000/questions/1</p>
+        <div class="row">
+          <label>ID <input type="number" id="qid" min="1" value="1" /></label>
+          <button type="button" class="primary" id="btn-one">Obtener pregunta</button>
+        </div>
+        <div id="one-out"></div>
+        <div class="msg error" id="err-one" hidden></div>
+      </section>
+    </div>
+
+    <footer>Servido desde <code>/interfaz/</code> · mismas rutas que consume el navegador</footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function safeJson(res) {
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { _raw: text };
+      }
+    }
+
+    function showErr(el, msg) {
+      el.textContent = msg;
+      el.hidden = false;
+    }
+
+    function hideErr(el) {
+      el.hidden = true;
+      el.textContent = "";
+    }
+
+    $("btn-root").addEventListener("click", async () => {
+      const out = $("out-root");
+      const err = $("err-root");
+      hideErr(err);
+      out.hidden = true;
+      try {
+        const res = await fetch("/");
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        out.textContent = JSON.stringify(data, null, 2);
+        out.hidden = false;
+      } catch (e) {
+        showErr(err, e.message || String(e));
+      }
+    });
+
+    function updateListHint() {
+      const skip = $("skip").value || 0;
+      const limit = $("limit").value || 10;
+      const origin = window.location.origin;
+      $("hint-list").textContent = `${origin}/questions?skip=${skip}&limit=${limit}`;
+    }
+
+    $("skip").addEventListener("input", updateListHint);
+    $("limit").addEventListener("input", updateListHint);
+
+    $("btn-list").addEventListener("click", async () => {
+      const err = $("err-list");
+      const container = $("list-out");
+      hideErr(err);
+      container.innerHTML = "";
+      const skip = parseInt($("skip").value, 10) || 0;
+      const limit = parseInt($("limit").value, 10) || 10;
+      updateListHint();
+      try {
+        const res = await fetch(`/questions?skip=${skip}&limit=${limit}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        if (!Array.isArray(data) || data.length === 0) {
+          container.innerHTML = '<p class="empty">No hay filas en este rango.</p>';
+          return;
+        }
+        const frag = document.createDocumentFragment();
+        data.forEach((item) => {
+          const art = document.createElement("article");
+          art.className = "q";
+          const h = document.createElement("header");
+          h.textContent = "ID " + (item.id ?? "—");
+          const qt = document.createElement("div");
+          qt.className = "q-text";
+          qt.textContent = item.question ?? "";
+          const at = document.createElement("div");
+          at.className = "a-text";
+          const strong = document.createElement("strong");
+          strong.textContent = "Respuesta: ";
+          at.appendChild(strong);
+          at.appendChild(document.createTextNode(item.answer ?? ""));
+          if (item.category) {
+            const cat = document.createElement("div");
+            cat.className = "a-text";
+            cat.style.marginTop = "0.35rem";
+            cat.textContent = "Categoría: " + item.category;
+            art.appendChild(cat);
+          }
+          art.appendChild(h);
+          art.appendChild(qt);
+          art.appendChild(at);
+          frag.appendChild(art);
+        });
+        container.appendChild(frag);
+      } catch (e) {
+        showErr(err, e.message || String(e));
+      }
+    });
+
+    $("qid").addEventListener("input", () => {
+      const id = $("qid").value || "1";
+      $("hint-one").textContent = `${window.location.origin}/questions/${id}`;
+    });
+
+    $("btn-one").addEventListener("click", async () => {
+      const err = $("err-one");
+      const wrap = $("one-out");
+      hideErr(err);
+      wrap.innerHTML = "";
+      const id = parseInt($("qid").value, 10);
+      $("hint-one").textContent = `${window.location.origin}/questions/${id}`;
+      if (Number.isNaN(id) || id < 1) {
+        showErr(err, "Indicá un ID entero ≥ 1.");
+        return;
+      }
+      try {
+        const res = await fetch(`/questions/${id}`);
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        if (data.error) {
+          const p = document.createElement("p");
+          p.className = "msg info";
+          p.textContent = data.error;
+          wrap.appendChild(p);
+          return;
+        }
+        const art = document.createElement("article");
+        art.className = "q";
+        art.innerHTML = "";
+        const h = document.createElement("header");
+        h.textContent = "Pregunta #" + data.id;
+        const qt = document.createElement("div");
+        qt.className = "q-text";
+        qt.textContent = data.question ?? "";
+        const at = document.createElement("div");
+        at.className = "a-text";
+        const strong = document.createElement("strong");
+        strong.textContent = "Respuesta: ";
+        at.appendChild(strong);
+        at.appendChild(document.createTextNode(data.answer ?? ""));
+        art.appendChild(h);
+        art.appendChild(qt);
+        art.appendChild(at);
+        if (data.source) {
+          const s = document.createElement("div");
+          s.className = "a-text";
+          s.style.marginTop = "0.35rem";
+          s.textContent = "Fuente: " + data.source;
+          art.appendChild(s);
+        }
+        wrap.appendChild(art);
+      } catch (e) {
+        showErr(err, e.message || String(e));
+      }
+    });
+  </script>
+</body>
+</html>
