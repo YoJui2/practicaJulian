@@ -1,11 +1,18 @@
+import ast
+import json
+import os
+import tempfile
+
 import pandas as pd
 import requests
-import tempfile
-import os
+from sqlalchemy import delete
+
 from app.database import SessionLocal, engine
 from app.models import Base, Question
 
-DATASET_URL = "https://huggingface.co/api/datasets/basicv8vc/SimpleQA/parquet/default/test/0.parquet"
+DATASET_URL = (
+    "https://huggingface.co/api/datasets/basicv8vc/SimpleQA/parquet/default/test/0.parquet"
+)
 
 
 def download_parquet(url: str) -> str:
@@ -16,6 +23,59 @@ def download_parquet(url: str) -> str:
     tmp.write(r.content)
     tmp.close()
     return tmp.name
+
+
+def _metadata_as_dict(meta) -> dict:
+    """SimpleQA guarda `metadata` como dict, string JSON o repr estilo Python."""
+    if meta is None or (isinstance(meta, float) and pd.isna(meta)):
+        return {}
+    if isinstance(meta, dict):
+        return meta
+    if isinstance(meta, str):
+        s = meta.strip()
+        if not s:
+            return {}
+        try:
+            parsed = json.loads(s)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            try:
+                parsed = ast.literal_eval(s)
+                return parsed if isinstance(parsed, dict) else {}
+            except (ValueError, SyntaxError):
+                return {}
+    if hasattr(meta, "as_py"):
+        v = meta.as_py()
+        return v if isinstance(v, dict) else {}
+    try:
+        return dict(meta)
+    except (TypeError, ValueError):
+        return {}
+
+
+def simpleqa_row_to_fields(row) -> dict | None:
+    """Mapea Parquet SimpleQA → modelo Question (problem → question, topic → category)."""
+    q = row.get("problem") or row.get("question") or ""
+    a = row.get("answer") or ""
+    q = str(q).strip() if pd.notna(q) else ""
+    a = str(a).strip() if pd.notna(a) else ""
+    if not q or not a:
+        return None
+
+    meta = _metadata_as_dict(row.get("metadata"))
+    topic = meta.get("topic")
+    category = (
+        str(topic)[:100]
+        if topic is not None and str(topic).strip()
+        else None
+    )
+
+    return {
+        "question": q,
+        "answer": a,
+        "category": category,
+        "source": None,
+    }
 
 
 def load_questions():
@@ -30,18 +90,21 @@ def load_questions():
     print(df.head(3))
 
     session = SessionLocal()
+    inserted = 0
     try:
+        res = session.execute(delete(Question))
+        removed = res.rowcount if res.rowcount is not None else 0
+        print(f"Filas previas eliminadas: {removed}")
+
         for _, row in df.iterrows():
-            question = Question(
-                question=row.get("question", ""),
-                answer=row.get("answer", "") or row.get("answer_alias", ""),
-                category=row.get("category", None),
-                source=row.get("source", None),
-            )
-            session.add(question)
+            fields = simpleqa_row_to_fields(row)
+            if fields is None:
+                continue
+            session.add(Question(**fields))
+            inserted += 1
 
         session.commit()
-        print(f"Se insertaron {len(df)} preguntas correctamente.")
+        print(f"Se insertaron {inserted} preguntas correctamente.")
     except Exception as e:
         session.rollback()
         print(f"Error: {e}")
