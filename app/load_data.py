@@ -5,7 +5,7 @@ import os
 from app.database import SessionLocal, engine
 from app.models import Base, Question
 
-DATASET_URL = "https://huggingface.co/datasets/cais/mmlu"
+DATASET_URL = "https://huggingface.co/api/datasets/rajpurkar/squad/parquet/plain_text/train/0.parquet"
 
 
 def download_parquet(url: str) -> str:
