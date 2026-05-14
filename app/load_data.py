@@ -1,37 +1,41 @@
-import pandas as pd
-import requests
-import tempfile
-import os
+import json
+from pathlib import Path
+
+from sqlalchemy import delete
+
 from app.database import SessionLocal, engine
 from app.models import Base, Question
 
-DATASET_URL = "https://huggingface.co/api/datasets/basicv8vc/SimpleQA/parquet/default/test/0.parquet"
+# URL Parquet Hugging Face (descomentá y usá el bloque de abajo en load_questions para volver a HF):
+# DATASET_URL = (
+#     "https://huggingface.co/api/datasets/basicv8vc/SimpleQA/parquet/default/test/0.parquet"
+# )
 
-
-def download_parquet(url: str) -> str:
-    print(f"Descargando {url}...")
-    r = requests.get(url, stream=True)
-    r.raise_for_status()
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".parquet")
-    tmp.write(r.content)
-    tmp.close()
-    return tmp.name
+DATA_JSON_PATH = Path(__file__).resolve().parent.parent / "data" / "preguntas_ejemplo.json"
 
 
 def load_questions():
     Base.metadata.create_all(bind=engine)
 
-    parquet_path = download_parquet(DATASET_URL)
-    df = pd.read_parquet(parquet_path)
-    os.unlink(parquet_path)
+    with DATA_JSON_PATH.open(encoding="utf-8") as f:
+        rows = json.load(f)
 
-    print(f"Columnas disponibles: {list(df.columns)}")
-    print(f"Filas: {len(df)}")
-    print(df.head(3))
+    print(f"Origen: {DATA_JSON_PATH}")
+    if rows:
+        print(f"Claves de ejemplo: {list(rows[0].keys())}")
+    print(f"Filas: {len(rows)}")
+    print(rows[:3])
+
+    # Carga alternativa: descomentá DATASET_URL y leé el Parquet con pandas/requests.
 
     session = SessionLocal()
+    inserted = 0
     try:
-        for _, row in df.iterrows():
+        res = session.execute(delete(Question))
+        removed = res.rowcount if res.rowcount is not None else 0
+        print(f"Filas previas eliminadas: {removed}")
+
+        for row in rows:
             question = Question(
                 question=row.get("question", ""),
                 answer=row.get("answer", "") or row.get("answer_alias", ""),
@@ -39,9 +43,10 @@ def load_questions():
                 source=row.get("source", None),
             )
             session.add(question)
+            inserted += 1
 
         session.commit()
-        print(f"Se insertaron {len(df)} preguntas correctamente.")
+        print(f"Se insertaron {inserted} preguntas correctamente.")
     except Exception as e:
         session.rollback()
         print(f"Error: {e}")

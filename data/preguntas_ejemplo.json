@@ -1,0 +1,20 @@
+[
+  {
+    "question": "¿Capital de Argentina?",
+    "answer": "Buenos Aires",
+    "category": "geografia",
+    "source": "manual"
+  },
+  {
+    "question": "¿Cuánto es 2+2?",
+    "answer": "4",
+    "category": "matematica",
+    "source": "manual"
+  },
+  {
+    "question": "¿Quién creó Python?",
+    "answer": "Guido van Rossum",
+    "category": "programacion",
+    "source": "manual"
+  }
+]
