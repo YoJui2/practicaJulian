@@ -50,3 +50,4 @@ def load_questions():
 
 
 if __name__ == "__main__":
+    load_questions()
