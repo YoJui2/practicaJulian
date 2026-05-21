@@ -1,15 +1,11 @@
-from pathlib import Path
-
 from fastapi import FastAPI, Depends
-from fastapi.staticfiles import StaticFiles
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db, engine
 from app.models import Base, Question
 
 app = FastAPI(title="Questions API", version="1.0.0")
-
-_STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
 @app.on_event("startup")
@@ -21,8 +17,12 @@ def on_startup():
 def root():
     return {
         "message": "Questions API funcionando",
-        "endpoints": ["/questions", "/questions/{id}"],
-        "interfaz": "/interfaz/",
+        "endpoints": [
+            "/questions",
+            "/questions/{id}",
+            "/questions/category/{category}",
+            "/stats",
+        ],
         "docs": "/docs",
     }
 
@@ -33,17 +33,41 @@ def list_questions(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)
     return questions
 
 
+@app.get("/questions/category/{category}")
+def list_questions_by_category(
+    category: str,
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+):
+    questions = (
+        db.query(Question)
+        .filter(Question.category == category)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return questions
+
+
+@app.get("/stats")
+def stats(db: Session = Depends(get_db)):
+    total = db.query(func.count(Question.id)).scalar() or 0
+    rows = (
+        db.query(Question.category, func.count(Question.id))
+        .group_by(Question.category)
+        .order_by(func.count(Question.id).desc())
+        .all()
+    )
+    by_category = {
+        (cat if cat is not None else "(sin categoría)"): count for cat, count in rows
+    }
+    return {"total": total, "by_category": by_category}
+
+
 @app.get("/questions/{question_id}")
 def get_question(question_id: int, db: Session = Depends(get_db)):
     question = db.query(Question).filter(Question.id == question_id).first()
     if not question:
         return {"error": "Pregunta no encontrada"}
     return question
-
-
-if _STATIC_DIR.is_dir():
-    app.mount(
-        "/interfaz",
-        StaticFiles(directory=str(_STATIC_DIR), html=True),
-        name="interfaz",
-    )

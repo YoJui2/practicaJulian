@@ -2,9 +2,10 @@ Visitá en el navegador:
 
 | URL | Qué hace |
 |---|---|
-| `http://localhost:8000/interfaz/` | Panel web (misma API: bienvenida, lista, por ID, enlace a docs) |
 | `http://localhost:8000` | Mensaje de bienvenida |
 | `http://localhost:8000/docs` | Documentación interactiva (Swagger UI) |
 | `http://localhost:8000/questions` | Primeras 10 preguntas |
 | `http://localhost:8000/questions?skip=10&limit=5` | Preguntas 11 a 15 |
 | `http://localhost:8000/questions/1` | Pregunta con ID = 1 |
+| `http://localhost:8000/questions/category/geografia` | Preguntas filtradas por categoría |
+| `http://localhost:8000/stats` | Total de preguntas y cantidad por categoría |
