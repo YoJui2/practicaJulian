@@ -5,18 +5,14 @@ import tempfile
 
 import pandas as pd
 import requests
-<<<<<<< HEAD
-=======
 from sqlalchemy import delete
 
->>>>>>> env+explorar-mas
 from app.database import SessionLocal, engine
 from app.models import Base, Question
 
 DATASET_URL = (
     "https://huggingface.co/api/datasets/basicv8vc/SimpleQA/parquet/default/test/0.parquet"
 )
-<<<<<<< HEAD
 
 
 def _metadata_as_dict(meta) -> dict:
@@ -67,8 +63,6 @@ def simpleqa_row_to_fields(row) -> dict | None:
             source = str(first).strip()[:255]
 
     return {"question": q, "answer": a, "category": category, "source": source}
-=======
->>>>>>> env+explorar-mas
 
 
 def download_parquet(url: str) -> str:
