@@ -309,7 +309,7 @@ for q in data:
 |---|---|
 | Iniciar BD | `docker compose up -d` |
 | Detener BD | `docker compose down` |
-| Cargar datos | `poetry run python app/load_data.py` |
+| Cargar datos | `poetry run python -m app/load_data.py ` |
 | Iniciar API | `poetry run uvicorn app.main:app --reload` |
 | Abrir Python | `poetry run python` |
 | Agregar lib | `poetry add <paquete>` |
