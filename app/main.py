@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -6,6 +7,13 @@ from app.database import get_db, engine
 from app.models import Base, Question
 
 app = FastAPI(title="Questions API", version="1.0.0")
+
+
+class QuestionCreate(BaseModel):
+    question: str = Field(..., min_length=1)
+    answer: str = Field(..., min_length=1)
+    category: str | None = Field(None, max_length=100)
+    source: str | None = Field(None, max_length=255)
 
 
 @app.on_event("startup")
@@ -19,6 +27,7 @@ def root():
         "message": "Questions API funcionando",
         "endpoints": [
             "/questions",
+            "POST /questions",
             "/questions/{id}",
             "/questions/category/{category}",
             "/stats",
@@ -31,6 +40,20 @@ def root():
 def list_questions(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     questions = db.query(Question).offset(skip).limit(limit).all()
     return questions
+
+
+@app.post("/questions", status_code=201)
+def create_question(payload: QuestionCreate, db: Session = Depends(get_db)):
+    db_question = Question(
+        question=payload.question,
+        answer=payload.answer,
+        category=payload.category,
+        source=payload.source,
+    )
+    db.add(db_question)
+    db.commit()
+    db.refresh(db_question)
+    return db_question
 
 
 @app.get("/questions/category/{category}")

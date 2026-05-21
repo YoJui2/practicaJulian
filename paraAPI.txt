@@ -4,7 +4,8 @@ Visitá en el navegador:
 |---|---|
 | `http://localhost:8000` | Mensaje de bienvenida |
 | `http://localhost:8000/docs` | Documentación interactiva (Swagger UI) |
-| `http://localhost:8000/questions` | Primeras 10 preguntas |
+| `http://localhost:8000/questions` | Primeras 10 preguntas (GET) |
+| `POST http://localhost:8000/questions` | Crear pregunta nueva (body JSON en `/docs`) |
 | `http://localhost:8000/questions?skip=10&limit=5` | Preguntas 11 a 15 |
 | `http://localhost:8000/questions/1` | Pregunta con ID = 1 |
 | `http://localhost:8000/questions/category/geografia` | Preguntas filtradas por categoría |
