@@ -13,8 +13,9 @@ class Question(Base):
     category = Column(String(100), nullable=True)
     source = Column(String(255), nullable=True)
 
+"""
 class Categorization(Base):
-    """
+    
     Registra la categorización de cada pregunta.
     Guarda tanto las decisiones automáticas de la IA como las manuales del humano.
 
@@ -30,7 +31,7 @@ class Categorization(Base):
 
     Relación:
     - question: relación con el modelo Question (relationship)
-    """
+    
     __tablename__ = "categorizations"
 
     # TODO: Definir las columnas id, question_id, category_name,
@@ -42,4 +43,4 @@ class Categorization(Base):
     #   - Usá default=datetime.now(timezone.utc) o un callable para created_at
     #   - Definí una relationship("Question", backref="categorizations")
 
-    pass
+    """
