@@ -5,7 +5,7 @@ description = "API de preguntas con FastAPI y Hugging Face"
 authors = [
     {name = "Your Name",email = "you@example.com"}
 ]
-requires-python = "^3.11"
+requires-python = ">=3.11,<3.15"
 dependencies = [
     "fastapi (>=0.136.1,<0.137.0)",
     "uvicorn (>=0.46.0,<0.47.0)",
@@ -13,7 +13,12 @@ dependencies = [
     "psycopg2-binary (>=2.9.12,<3.0.0)",
     "pandas (>=3.0.3,<4.0.0)",
     "pyarrow (>=24.0.0,<25.0.0)",
-    "requests (>=2.34.0,<3.0.0)"
+    "requests (>=2.34.0,<3.0.0)",
+    "transformers (>=5.12.1,<6.0.0)",
+    "torch (==2.2.2)",
+    "sentence-transformers (>=5.6.0,<6.0.0)",
+    "scikit-learn (>=1.9.0,<2.0.0)",
+    "tqdm (>=4.68.3,<5.0.0)"
 ]
 
 

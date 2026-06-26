@@ -94,3 +94,69 @@ def get_question(question_id: int, db: Session = Depends(get_db)):
     if not question:
         return {"error": "Pregunta no encontrada"}
     return question
+
+# --- Agregar estos endpoints al archivo main.py existente ---
+
+
+@app.get("/questions/category/{category_name}")
+def list_by_category(category_name: str, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    """
+    Retorna las preguntas que fueron categorizadas con una categoría específica.
+
+    TAREA:
+    - Hacer un JOIN entre Question y Categorization
+    - Filtrar por Categorization.category_name == category_name
+    - Aplicar skip y limit
+    - Retornar las preguntas con su información de categorización
+
+    TODO: Implementar la query con JOIN.
+    """
+    # TODO: Implementar
+    pass
+
+
+@app.get("/categories")
+def list_categories():
+    """
+    Retorna la lista de categorías disponibles.
+
+    TAREA:
+    - Importar CATEGORIES desde app/categories.py
+    - Retornar la lista completa
+
+    TODO: Implementar.
+    """
+    # TODO: Implementar
+    pass
+
+
+@app.get("/categories/stats")
+def category_stats(db: Session = Depends(get_db)):
+    """
+    Retorna estadísticas de categorización.
+
+    Debe retornar un JSON como:
+    {
+        "total_questions": 1000,
+        "categorized": 850,
+        "uncategorized": 150,
+        "automatic": 700,
+        "manual": 150,
+        "by_category": {
+            "machine_learning": 200,
+            "historia": 150,
+            ...
+        }
+    }
+
+    TAREA:
+    - Contar el total de preguntas
+    - Contar las categorizadas (que tienen entrada en categorizations)
+    - Contar automáticas vs manuales
+    - Agrupar por categoría (GROUP BY)
+
+    TODO: Implementar las queries necesarias.
+    Pista: usá db.query(func.count(...)).group_by(...)
+    """
+    # TODO: Implementar
+    pass
