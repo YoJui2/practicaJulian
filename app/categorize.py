@@ -7,10 +7,19 @@ Orquesta todo el flujo:
 3. Si el score >= threshold → guarda automáticamente
 4. Si el score < threshold → pide revisión humana
 5. Guarda el resultado en la tabla categorizations
-
-TAREA: Implementar la función principal y las funciones auxiliares.
 """
+
 from tqdm import tqdm
+
+from app.categories import CATEGORIES, get_category_names
+from app.classifier import AIClassifier
+from app.database import SessionLocal
+from app.human_review import (
+    ask_human_for_category,
+    confirm_ai_suggestion,
+    display_question_context,
+)
+from app.models import Categorization, Question
 
 
 # Umbral de confianza (70%)
@@ -20,79 +29,128 @@ CONFIDENCE_THRESHOLD = 0.70
 def get_uncategorized_questions(db) -> list:
     """
     Obtiene todas las preguntas que aún no tienen una categorización.
-
-    Args:
-        db: sesión de SQLAlchemy
-
-    Returns:
-        Lista de objetos Question que no tienen una entrada en la tabla categorizations.
-
-    TODO:
-    - Hacer una query que obtenga preguntas cuyo id NO esté en la tabla categorizations
-    - Pista: usá .filter(~Question.id.in_(subquery)) o un LEFT JOIN con filtro IS NULL
-    - Retornar la lista de preguntas
     """
-    # TODO: Implementar
-    pass
+    categorized_question_ids = db.query(Categorization.question_id).subquery()
+    return db.query(Question).filter(~Question.id.in_(categorized_question_ids)).all()
 
 
-def save_categorization(db, question_id: int, category_name: str, confidence_score: float, is_automatic: bool) -> None:
+def save_categorization(
+    db,
+    question_id: int,
+    category_name: str,
+    confidence_score: float,
+    is_automatic: bool,
+) -> None:
     """
     Guarda una categorización en la base de datos.
-
-    Args:
-        db: sesión de SQLAlchemy
-        question_id: ID de la pregunta categorizada
-        category_name: nombre de la categoría asignada
-        confidence_score: score de confianza de la IA
-        is_automatic: True si fue decisión automática, False si fue humana
-
-    TODO:
-    - Crear una instancia de Categorization con los datos recibidos
-    - Agregarla a la sesión con db.add()
-    - Hacer db.commit()
-    - Manejar excepciones con try/except y hacer db.rollback() si falla
     """
-    # TODO: Implementar
-    pass
+    try:
+        categorization = Categorization(
+            question_id=question_id,
+            category_name=category_name,
+            confidence_score=float(confidence_score),
+            is_automatic=is_automatic,
+        )
+        db.add(categorization)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise RuntimeError(f"No se pudo guardar la categorización: {exc}") from exc
 
 
 def categorize_all(batch_size: int = 32, threshold: float = CONFIDENCE_THRESHOLD) -> None:
     """
     Función principal que ejecuta el flujo completo de categorización.
-
-    Args:
-        batch_size: tamaño del lote para procesamiento
-        threshold: umbral de confianza para decisión automática
-
-    TODO:
-    1. Obtener una sesión de BD (usar SessionLocal o get_db)
-    2. Cargar las categorías desde app/categories.py
-    3. Instanciar el clasificador (AIClassifier)
-    4. Obtener las preguntas sin categorizar
-    5. Mostrar resumen inicial:
-       - Total de preguntas pendientes
-       - Categorías disponibles
-       - Umbral de confianza
-    6. Iterar sobre las preguntas (usar tqdm para progreso):
-       a. Clasificar la pregunta con el clasificador
-       b. Si score >= threshold:
-          - Guardar como automática
-          - Incrementar contador de automáticas
-       c. Si score < threshold:
-          - Mostrar contexto al humano (display_question_context)
-          - Preguntar si acepta la sugerencia (confirm_ai_suggestion)
-          - Si acepta → guardar con la sugerencia
-          - Si no acepta → pedir categoría manual (ask_human_for_category)
-          - Si elige skip → continuar sin guardar
-          - Incrementar contador de manuales
-    7. Mostrar resumen final:
-       - Total procesadas
-       - Automáticas vs manuales
-       - Skipped
     """
-    # TODO: Implementar
-    pass
+    db = SessionLocal()
+    try:
+        categories = CATEGORIES
+        category_names = get_category_names()
+        classifier = AIClassifier()
+
+        pending_questions = get_uncategorized_questions(db)
+
+        print("Resumen inicial")
+        print(f"  - Preguntas pendientes: {len(pending_questions)}")
+        print(f"  - Categorías disponibles: {len(categories)}")
+        print(f"  - Umbral de confianza: {threshold:.0%}")
+
+        processed_count = 0
+        automatic_count = 0
+        manual_count = 0
+        skipped_count = 0
+
+        for start_index in range(0, len(pending_questions), batch_size):
+            batch = pending_questions[start_index:start_index + batch_size]
+
+            for question in tqdm(
+                batch,
+                total=len(batch),
+                desc=f"Procesando lote {start_index // batch_size + 1}",
+            ):
+                if not question.question:
+                    continue
+
+                result = classifier.classify(question.question, category_names)
+
+                if result.confidence_score >= threshold:
+                    save_categorization(
+                        db,
+                        question.id,
+                        result.category_name,
+                        result.confidence_score,
+                        is_automatic=True,
+                    )
+                    automatic_count += 1
+                else:
+                    display_question_context(
+                        question.question,
+                        result.category_name,
+                        result.confidence_score,
+                        result.all_scores,
+                    )
+
+                    accepted = confirm_ai_suggestion(
+                        result.category_name,
+                        result.confidence_score,
+                    )
+
+                    if accepted:
+                        save_categorization(
+                            db,
+                            question.id,
+                            result.category_name,
+                            result.confidence_score,
+                            is_automatic=False,
+                        )
+                        manual_count += 1
+                    else:
+                        chosen_category = ask_human_for_category(categories)
+
+                        if chosen_category is None:
+                            skipped_count += 1
+                            continue
+
+                        save_categorization(
+                            db,
+                            question.id,
+                            chosen_category,
+                            result.confidence_score,
+                            is_automatic=False,
+                        )
+                        manual_count += 1
+
+                processed_count += 1
+
+        print()
+        print("Resumen final")
+        print(f"  - Total procesadas: {processed_count}")
+        print(f"  - Automáticas: {automatic_count}")
+        print(f"  - Manuales: {manual_count}")
+        print(f"  - Skip: {skipped_count}")
+
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":
