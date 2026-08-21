@@ -57,3 +57,15 @@ class AIClassifier:
             confidence_score=confidence_score,
             all_scores=all_scores,
         )
+
+    def classify_batch(self, texts: list[str], candidate_labels: list[str]) -> list[ClassificationResult]:
+        """
+        Clasifica múltiples textos contra las mismas categorías candidatas.
+        """
+        results: list[ClassificationResult] = []
+
+        for text in texts:
+            result = self.classify(text=text, candidate_labels=candidate_labels)
+            results.append(result)
+
+        return results

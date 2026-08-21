@@ -10,3 +10,5 @@ Visitá en el navegador:
 | `http://localhost:8000/questions/1` | Pregunta con ID = 1 |
 | `http://localhost:8000/questions/category/geografia` | Preguntas filtradas por categoría |
 | `http://localhost:8000/stats` | Total de preguntas y cantidad por categoría |
+
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
