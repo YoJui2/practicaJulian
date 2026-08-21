@@ -1,4 +1,3 @@
-
 from app.database import Base
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
@@ -13,6 +12,13 @@ class Question(Base):
     answer = Column(Text, nullable=False)
     category = Column(String(100), nullable=True)
     source = Column(String(255), nullable=True)
+
+    categorizations = relationship(
+        "Categorization",
+        back_populates="question",
+        cascade="all, delete-orphan",
+    )
+
 
 class Categorization(Base):
     """
