@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db, engine
-from app.models import Base, Question
+from app.models import Base, Categorization, Question
 from app.categories import CATEGORIES
 
 app = FastAPI(title="Questions API", version="1.0.0")
@@ -55,23 +55,6 @@ def create_question(payload: QuestionCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_question)
     return db_question
-
-
-@app.get("/questions/category/{category}")
-def list_questions_by_category(
-    category: str,
-    skip: int = 0,
-    limit: int = 10,
-    db: Session = Depends(get_db),
-):
-    questions = (
-        db.query(Question)
-        .filter(Question.category == category)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
-    return questions
 
 
 @app.get("/questions/category/{category_name}")
