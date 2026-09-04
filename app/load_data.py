@@ -120,11 +120,18 @@ def simpleqa_row_to_fields(row) -> dict | None:
         else None
     )
 
+    source = None
+    urls = meta.get("urls")
+    if isinstance(urls, (list, tuple)) and urls:
+        first = urls[0]
+        if first is not None and pd.notna(first) and str(first).strip():
+            source = str(first).strip()[:255]
+
     return {
         "question": q,
         "answer": a,
         "category": category,
-        "source": None,
+        "source": source,
     }
 
 
