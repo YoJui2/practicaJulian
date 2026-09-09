@@ -18,15 +18,10 @@ nota mental prender el container para los testeos, de lo contrario problema con 
 poetry run python -m app.categorize para asignar categorias a preguntas con necesidad de intervencion humana
 
 
-Mantenimiento de la base de datos
-
-Antes de ejecutar estos comandos, levantar el contenedor:
-
-docker compose up -d db
 
 Ver cuantas preguntas hay:
 
-docker compose exec -T db psql -U admin -d questions_db -c "SELECT COUNT(*) AS total_preguntas FROM questions;"
+docker compose exec -T db psql -U admin -d questions_db -t -A -c "SELECT COUNT(*) FROM questions;"
 
 Limpiar completamente la base de preguntas (tambien borra las categorizaciones y reinicia los IDs):
 
