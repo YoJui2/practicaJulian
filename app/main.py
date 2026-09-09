@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import func
@@ -7,8 +9,6 @@ from app.database import get_db, engine
 from app.models import Base, Categorization, Question
 from app.categories import CATEGORIES
 
-app = FastAPI(title="Questions API", version="1.0.0")
-
 
 class QuestionCreate(BaseModel):
     question: str = Field(..., min_length=1)
@@ -17,9 +17,14 @@ class QuestionCreate(BaseModel):
     source: str | None = Field(None, max_length=255)
 
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="Questions API", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/")
