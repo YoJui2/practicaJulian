@@ -5,72 +5,13 @@ import tempfile
 
 import pandas as pd
 import requests
-<<<<<<< HEAD
-=======
 from sqlalchemy import delete
-
->>>>>>> env+explorar-mas
 from app.database import SessionLocal, engine
 from app.models import Base, Question
 
 DATASET_URL = (
     "https://huggingface.co/api/datasets/basicv8vc/SimpleQA/parquet/default/test/0.parquet"
 )
-<<<<<<< HEAD
-
-
-def _metadata_as_dict(meta) -> dict:
-    if meta is None or (isinstance(meta, float) and pd.isna(meta)):
-        return {}
-    if isinstance(meta, dict):
-        return meta
-    if isinstance(meta, str):
-        s = meta.strip()
-        if not s:
-            return {}
-        try:
-            parsed = json.loads(s)
-            return parsed if isinstance(parsed, dict) else {}
-        except json.JSONDecodeError:
-            try:
-                parsed = ast.literal_eval(s)
-                return parsed if isinstance(parsed, dict) else {}
-            except (ValueError, SyntaxError):
-                return {}
-    if hasattr(meta, "as_py"):
-        v = meta.as_py()
-        return v if isinstance(v, dict) else {}
-    try:
-        return dict(meta)
-    except (TypeError, ValueError):
-        return {}
-
-
-def simpleqa_row_to_fields(row) -> dict | None:
-    """SimpleQA parquet: columns problem, answer, metadata {topic, urls, ...}."""
-    q = row.get("problem") or row.get("question") or ""
-    a = row.get("answer") or row.get("answer_alias") or ""
-    q = str(q).strip() if pd.notna(q) else ""
-    a = str(a).strip() if pd.notna(a) else ""
-    if not q or not a:
-        return None
-
-    meta = _metadata_as_dict(row.get("metadata"))
-    topic = meta.get("topic")
-    category = str(topic)[:100] if topic is not None and str(topic).strip() else None
-
-    source = None
-    urls = meta.get("urls")
-    if isinstance(urls, (list, tuple)) and urls:
-        first = urls[0]
-        if first is not None and pd.notna(first) and str(first).strip():
-            source = str(first).strip()[:255]
-
-    return {"question": q, "answer": a, "category": category, "source": source}
-=======
->>>>>>> env+explorar-mas
-
-
 def download_parquet(url: str) -> str:
     print(f"Descargando {url}...")
     r = requests.get(url, stream=True)
@@ -112,7 +53,7 @@ def _metadata_as_dict(meta) -> dict:
 def simpleqa_row_to_fields(row) -> dict | None:
     """Mapea Parquet SimpleQA → modelo Question (problem → question, topic → category)."""
     q = row.get("problem") or row.get("question") or ""
-    a = row.get("answer") or ""
+    a = row.get("answer") or row.get("answer_alias") or ""
     q = str(q).strip() if pd.notna(q) else ""
     a = str(a).strip() if pd.notna(a) else ""
     if not q or not a:
@@ -126,12 +67,14 @@ def simpleqa_row_to_fields(row) -> dict | None:
         else None
     )
 
-    return {
-        "question": q,
-        "answer": a,
-        "category": category,
-        "source": None,
-    }
+    source = None
+    urls = meta.get("urls")
+    if isinstance(urls, (list, tuple)) and urls:
+        first = urls[0]
+        if first is not None and pd.notna(first) and str(first).strip():
+            source = str(first).strip()[:255]
+
+    return {"question": q, "answer": a, "category": category, "source": source}
 
 
 def load_questions():
