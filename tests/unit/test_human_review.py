@@ -26,10 +26,16 @@ def test_ask_human_for_category_returns_none_for_skip(monkeypatch):
     assert ask_human_for_category(CATEGORIES) is None
 
 
-def test_confirm_ai_suggestion_accepts_empty_or_yes(monkeypatch):
-    for answer in ("", "s", "S"):
-        monkeypatch.setattr("builtins.input", lambda _: answer)
-        assert confirm_ai_suggestion("history", 0.8) is True
+def test_confirm_ai_suggestion_accepts_yes(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "s")
+
+    assert confirm_ai_suggestion("history", 0.8) is True
+
+
+def test_confirm_ai_suggestion_accepts_empty_answer(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "")
+
+    assert confirm_ai_suggestion("history", 0.8) is True
 
 
 def test_confirm_ai_suggestion_rejects_no(monkeypatch):

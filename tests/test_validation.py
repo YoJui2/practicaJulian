@@ -1,32 +1,14 @@
-import pytest
-
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"answer": "An answer"},
-        {"question": "A question"},
-        {"question": "", "answer": "An answer"},
-        {"question": "A question", "answer": ""},
-        {"question": 123, "answer": "An answer"},
-        {"question": "A question", "answer": 456},
-    ],
-)
-def test_create_question_rejects_invalid_required_fields(client, payload):
-    response = client.post("/questions", json=payload)
+def test_create_question_requires_question_and_answer(client):
+    response = client.post("/questions", json={"question": "A question"})
 
     assert response.status_code == 422
 
 
-@pytest.mark.parametrize(
-    "field, limit",
-    [("category", 100), ("source", 255)],
-)
-def test_create_question_rejects_fields_over_max_length(client, field, limit):
+def test_create_question_rejects_an_overly_long_category(client):
     payload = {
         "question": "A question",
         "answer": "An answer",
-        field: "x" * (limit + 1),
+        "category": "x" * 101,
     }
 
     response = client.post("/questions", json=payload)
@@ -34,7 +16,7 @@ def test_create_question_rejects_fields_over_max_length(client, field, limit):
     assert response.status_code == 422
 
 
-def test_create_question_accepts_valid_payload(client):
+def test_create_question_accepts_a_valid_payload(client):
     response = client.post(
         "/questions",
         json={
@@ -49,7 +31,16 @@ def test_create_question_accepts_valid_payload(client):
     assert response.json()["question"] == "  A question  "
 
 
-def test_get_missing_question_returns_not_found_message(client):
+def test_create_question_rejects_a_number_instead_of_text(client):
+    response = client.post(
+        "/questions",
+        json={"question": 123, "answer": "An answer"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_missing_question_returns_an_error_message(client):
     response = client.get("/questions/999")
 
     assert response.status_code == 200

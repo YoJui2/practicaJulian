@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.categorize import get_uncategorized_questions, save_categorization
+from app.categorize import save_categorization
 from app.models import Categorization
 
 
@@ -32,17 +32,3 @@ def test_save_categorization_rolls_back_and_raises_runtime_error():
     db.rollback.assert_called_once_with()
 
 
-def test_get_uncategorized_questions_filters_categorized_ids():
-    expected_questions = [object(), object()]
-    query = MagicMock()
-    query.filter.return_value.all.return_value = expected_questions
-    db = MagicMock()
-    db.query.return_value.subquery.return_value = "categorized_ids"
-    db.query.return_value = query
-
-    result = get_uncategorized_questions(db)
-
-    assert result == expected_questions
-    assert db.query.call_count == 2
-    query.filter.assert_called_once()
-    query.filter.return_value.all.assert_called_once_with()

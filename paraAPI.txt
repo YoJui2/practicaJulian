@@ -45,3 +45,49 @@ Limpiar completamente la base de preguntas (tambien borra las categorizaciones y
 Conservar solo las primeras 20 preguntas sin seleccionar por ID:
 
 docker compose exec -T db psql -U admin -d questions_db -c "BEGIN; CREATE TEMP TABLE questions_to_keep ON COMMIT DROP AS SELECT id FROM questions ORDER BY ctid LIMIT 50; DELETE FROM categorizations WHERE question_id NOT IN (SELECT id FROM questions_to_keep); DELETE FROM questions WHERE id NOT IN (SELECT id FROM questions_to_keep); COMMIT;"
+
+Unitarios
+para test, moneypatch reemplaza el input, permitiendo cambiar temporalmente partes del programa, testeando revisiones human in loop
+para test, MagickMock crea objetos falsos durante las pruebas. Permite simular una función, un servicio o una dependencia sin ejecutar su comportamiento real
+
+
+Integracion
+La fixture de `tests/conftest.py` configura:
+
+- SQLite en memoria.
+- `StaticPool` para compartir la misma base durante cada test.
+- Tablas SQLAlchemy temporales.
+- Override de la dependencia `get_db` de FastAPI.
+- Limpieza de tablas y engine al finalizar cada test.
+
+Se comprueba el flujo completo de la API:
+
+- Crear una pregunta con `POST /questions`.
+- Listar preguntas.
+- Consultar una pregunta por ID.
+- Obtener estadísticas generales.
+- Filtrar por categoría categorizada.
+- Obtener estadísticas de categorización automática y manual.
+
+
+para validacion:
+Se comprueba que la API responde `422` ante:
+
+- Campos obligatorios ausentes.
+- Pregunta o respuesta vacías.
+- Tipos incorrectos.
+- Categorías de más de 100 caracteres.
+- Fuentes de más de 255 caracteres.
+
+
+falta data quality, test unitario para classifier
+
+
+concepto: 
+ test unitario: verifica funciones o metodos de forma aislada, detecta errores de logica antes de escalar
+
+ test integracion:asegura la comunicacion entre APIs, Bd, etc, verificando que se comuniquen correctamente sin perdidas
+
+ test validacion: confirma que el codigo sea "correcto" para el usuario y no solo que "corre"
+
+ test data quality: verifica que no hayan datos nulos en columnas criticas, valida que los tipos de datos sean correctos

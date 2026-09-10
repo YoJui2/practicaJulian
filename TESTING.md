@@ -1,42 +1,36 @@
-# Testing del proyecto
+# Pruebas del proyecto
 
 ## Resumen
 
-Se incorporó una suite de pruebas con `pytest` para comprobar cuatro áreas del proyecto:
+El proyecto usa `pytest` para comprobar cuatro tipos de pruebas:
 
-- Tests unitarios.
-- Calidad de datos.
-- Integración entre FastAPI y SQLAlchemy.
-- Validación de entradas HTTP.
+- **Unitarias:** revisan una función pequeña de forma aislada.
+- **Calidad de datos:** revisan cómo se limpian y preparan los datos importados.
+- **Integración:** revisan varias partes juntas, por ejemplo la API y la base de datos.
+- **Validación:** revisan qué ocurre cuando una petición tiene datos incorrectos.
 
-La suite actual contiene **32 tests**.
+Cada prueba intenta comprobar una sola idea. Por eso los ejemplos son intencionadamente pequeños y fáciles de leer.
 
-## Cambios realizados
+## Ejecutar las pruebas
 
-### Configuración de pytest
-
-En `pyproject.toml` se agregaron:
-
-- `pytest` como dependencia de desarrollo.
-- `testpaths = ["tests"]` para indicar dónde buscar los tests.
-- `pythonpath = ["."]` para permitir imports como `from app...`.
-
-Los tests deben ejecutarse con el entorno virtual del proyecto:
+Desde la carpeta principal del proyecto:
 
 ```powershell
-.\.venv\Scripts\pytest.exe -q
+poetry run pytest -q
 ```
 
-También es posible ejecutar una categoría concreta:
+También se puede ejecutar un grupo:
 
 ```powershell
-.\.venv\Scripts\pytest.exe -q tests\unit
-.\.venv\Scripts\pytest.exe -q tests\test_data_quality.py
-.\.venv\Scripts\pytest.exe -q tests\test_integration.py
-.\.venv\Scripts\pytest.exe -q tests\test_validation.py
+poetry run pytest -q tests/unit
+poetry run pytest -q tests/test_data_quality.py
+poetry run pytest -q tests/test_integration.py
+poetry run pytest -q tests/test_validation.py
 ```
 
-## Estructura de tests
+La opción `-q` muestra un resumen corto.
+
+## Organización
 
 ```text
 tests/
@@ -46,124 +40,74 @@ tests/
     test_validation.py
     unit/
         test_categories.py
-        test_classifier.py
         test_categorize.py
         test_human_review.py
 ```
 
-## Tests unitarios
+## 1. Pruebas unitarias
 
-Los tests unitarios verifican funciones aisladas sin acceder a servicios externos.
+Archivos: `tests/unit/`
 
-### `test_categories.py`
+Comprueban funciones pequeñas sin levantar la API completa:
 
-Comprueba:
+- `test_categories.py` comprueba la lista de categorías y la búsqueda de una categoría.
+- `test_categorize.py` comprueba que una categorización se guarda y que un error provoca una recuperación correcta.
+- `test_human_review.py` comprueba una elección válida, la opción de saltar y la confirmación de una sugerencia.
 
-- Obtención de nombres, labels y descripciones.
-- Búsqueda de una categoría existente.
-- Resultado `None` cuando la categoría no existe.
+Cada una usa datos cortos, como una pregunta y una categoría, para que sea sencillo ver qué se espera.
 
-### `test_classifier.py`
-
-El pipeline de Hugging Face se reemplaza por un mock. Se comprueba:
-
-- Inicialización del clasificador sin descargar un modelo real.
-- Conversión de labels y scores a `ClassificationResult`.
-- Clasificación de varios textos mediante `classify_batch()`.
-
-### `test_human_review.py`
-
-La función `input()` se reemplaza con `monkeypatch`. Se comprueba:
-
-- Selección de una categoría válida.
-- Reintento después de una opción inválida.
-- Opción `Skip`.
-- Aceptación, rechazo y respuesta desconocida ante una sugerencia de IA.
-
-### `test_categorize.py`
-
-Se utiliza una sesión simulada con `MagicMock`. Se comprueba:
-
-- Guardado y confirmación mediante `commit()`.
-- Rollback y conversión de errores a `RuntimeError`.
-- Consulta de preguntas sin categorizar.
-
-## Tests de calidad de datos
+## 2. Pruebas de calidad de datos
 
 Archivo: `tests/test_data_quality.py`
 
-Se comprueba el procesamiento de filas provenientes de SimpleQA:
+Comprueban que una fila importada se puede usar en la aplicación:
 
-- Metadata en formato JSON.
-- Metadata como literal de Python.
-- Metadata inválida o vacía.
-- Limpieza de espacios en preguntas y respuestas.
-- Uso de `problem` y del alias `question`.
-- Descarte de filas sin pregunta o respuesta.
-- Extracción de `topic` como categoría.
-- Extracción de la primera URL como fuente.
-- Límites de 100 caracteres para categoría y 255 para fuente.
+- Lee metadata sencilla.
+- Devuelve un diccionario vacío si la metadata no es válida.
+- Limpia espacios de una pregunta y su respuesta.
+- Descarta una fila sin respuesta.
+- Respeta los límites de longitud de categoría y fuente.
 
-Durante estos tests se detectó y corrigió un error en `app/load_data.py`: la función efectiva `simpleqa_row_to_fields()` siempre devolvía `source=None`, aunque la metadata tuviera URLs. Ahora conserva la primera URL válida, limpia sus espacios y aplica el límite de 255 caracteres.
-
-## Tests de integración
+## 3. Pruebas de integración
 
 Archivo: `tests/test_integration.py`
 
-La fixture de `tests/conftest.py` configura:
+Comprueba el recorrido principal de una pregunta en la API:
 
-- SQLite en memoria.
-- `StaticPool` para compartir la misma base durante cada test.
-- Tablas SQLAlchemy temporales.
-- Override de la dependencia `get_db` de FastAPI.
-- Limpieza de tablas y engine al finalizar cada test.
+1. Crear una pregunta.
+2. Consultar la pregunta creada.
+3. Listar las preguntas.
+4. Consultar las estadísticas.
 
-Se comprueba el flujo completo de la API:
+La fixture de `tests/conftest.py` usa una base SQLite temporal. Los datos se borran al terminar cada prueba, así que no se modifica la base real.
 
-- Crear una pregunta con `POST /questions`.
-- Listar preguntas.
-- Consultar una pregunta por ID.
-- Obtener estadísticas generales.
-- Filtrar por categoría categorizada.
-- Obtener estadísticas de categorización automática y manual.
-
-Estos tests no necesitan PostgreSQL ni modificar datos reales.
-
-## Tests de validación
+## 4. Pruebas de validación
 
 Archivo: `tests/test_validation.py`
 
-Se comprueba que la API responde `422` ante:
+Comprueban que la API rechaza datos incorrectos:
 
-- Campos obligatorios ausentes.
-- Pregunta o respuesta vacías.
-- Tipos incorrectos.
-- Categorías de más de 100 caracteres.
-- Fuentes de más de 255 caracteres.
+- Falta la pregunta o la respuesta.
+- La categoría supera los 100 caracteres.
+- Se envía un número donde debe ir texto.
+- La API acepta una petición válida.
+- La API devuelve un mensaje cuando se busca una pregunta inexistente.
 
-También se comprueba:
+## Resultado esperado
 
-- Creación correcta con un payload válido.
-- Respuesta actual para una pregunta inexistente.
-
-La API actualmente devuelve `200` y `{ "error": "Pregunta no encontrada" }` cuando no existe la pregunta. El test documenta ese comportamiento actual.
-
-## Resultado verificado
-
-La ejecución completa realizada con el entorno virtual produjo:
+Al ejecutar toda la suite debe aparecer un resumen similar a:
 
 ```text
-32 passed, 2 warnings
+23 passed
 ```
 
-Los warnings provienen del uso de `@app.on_event("startup")`, que FastAPI marca como obsoleto en favor de los lifespan events. No impiden la ejecución de los tests.
+El número puede cambiar si se agregan nuevas pruebas.
 
-## Dependencias externas aisladas
+## Dependencias aisladas
 
-La suite no requiere:
+Las pruebas no necesitan:
 
 - Descargar el modelo de Hugging Face.
 - Acceder a Internet.
 - Ejecutar PostgreSQL.
-- Introducir datos manualmente por consola.
 - Cargar el dataset real desde Hugging Face.
