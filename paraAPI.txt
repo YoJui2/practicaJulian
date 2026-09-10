@@ -13,11 +13,27 @@ Visitá en el navegador:
 
 poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-nota mental prender el container para los testeos, de lo contrario problema con las dependencias
+dataset utilizado:
+[Línea que carga las preguntas desde el dataset](app/load_data.py#L139)
 
-poetry run python -m app.categorize para asignar categorias a preguntas con necesidad de intervencion humana
+Modelo utilizado:
+[Ver la línea que define e inicia el modelo de IA en `app/classifier.py`](app/classifier.py#L37)
 
+todos los tests
+poetry run pytest
 
+solo los tests unitarios:
+poetry run pytest tests/unit
+
+tests específicos:
+poetry run pytest tests/unit/test_classifier.py
+
+Ejecutar tests por nombre:
+poetry run pytest -k classifier
+
+"poetry run python -m app.categorize" para asignar categorias a preguntas con necesidad de intervencion humana
+
+cargar preguntas de la bd "poetry run python -m app.load_data"
 
 Ver cuantas preguntas hay:
 
@@ -25,8 +41,7 @@ docker compose exec -T db psql -U admin -d questions_db -t -A -c "SELECT COUNT(*
 
 Limpiar completamente la base de preguntas (tambien borra las categorizaciones y reinicia los IDs):
 
-docker compose exec -T db psql -U admin -d questions_db -c "TRUNCATE TABLE categorizations, questions RESTART IDENTITY CASCADE;"
 
 Conservar solo las primeras 20 preguntas sin seleccionar por ID:
 
-docker compose exec -T db psql -U admin -d questions_db -c "BEGIN; CREATE TEMP TABLE questions_to_keep ON COMMIT DROP AS SELECT id FROM questions ORDER BY ctid LIMIT 20; DELETE FROM categorizations WHERE question_id NOT IN (SELECT id FROM questions_to_keep); DELETE FROM questions WHERE id NOT IN (SELECT id FROM questions_to_keep); COMMIT;"
+docker compose exec -T db psql -U admin -d questions_db -c "BEGIN; CREATE TEMP TABLE questions_to_keep ON COMMIT DROP AS SELECT id FROM questions ORDER BY ctid LIMIT 50; DELETE FROM categorizations WHERE question_id NOT IN (SELECT id FROM questions_to_keep); DELETE FROM questions WHERE id NOT IN (SELECT id FROM questions_to_keep); COMMIT;"
