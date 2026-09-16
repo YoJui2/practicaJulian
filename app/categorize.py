@@ -79,7 +79,9 @@ def categorize_all(batch_size: int = 32, threshold: float = CONFIDENCE_THRESHOLD
         automatic_count = 0
         manual_count = 0
         skipped_count = 0
+        manual_review_queue = []
 
+        print("\nFase 1: clasificación automática de todas las preguntas")
         for start_index in range(0, len(pending_questions), batch_size):
             batch = pending_questions[start_index:start_index + batch_size]
 
@@ -103,44 +105,51 @@ def categorize_all(batch_size: int = 32, threshold: float = CONFIDENCE_THRESHOLD
                     )
                     automatic_count += 1
                 else:
-                    display_question_context(
-                        question.question,
-                        result.category_name,
-                        result.confidence_score,
-                        result.all_scores,
-                    )
-
-                    accepted = confirm_ai_suggestion(
-                        result.category_name,
-                        result.confidence_score,
-                    )
-
-                    if accepted:
-                        save_categorization(
-                            db,
-                            question.id,
-                            result.category_name,
-                            result.confidence_score,
-                            is_automatic=False,
-                        )
-                        manual_count += 1
-                    else:
-                        chosen_category = ask_human_for_category(categories)
-
-                        if chosen_category is None:
-                            skipped_count += 1
-                            continue
-
-                        save_categorization(
-                            db,
-                            question.id,
-                            chosen_category,
-                            result.confidence_score,
-                            is_automatic=False,
-                        )
-                        manual_count += 1
+                    manual_review_queue.append((question, result))
 
                 processed_count += 1
+
+        print(f"\nFase 1 terminada: {automatic_count} automáticas")
+        print(f"Fase 2: revisión humana de {len(manual_review_queue)} preguntas")
+
+        for question, result in manual_review_queue:
+            display_question_context(
+                question.question,
+                result.category_name,
+                result.confidence_score,
+                result.all_scores,
+            )
+
+            accepted = confirm_ai_suggestion(
+                result.category_name,
+                result.confidence_score,
+            )
+
+            if accepted:
+                save_categorization(
+                    db,
+                    question.id,
+                    result.category_name,
+                    result.confidence_score,
+                    is_automatic=False,
+                )
+                manual_count += 1
+                continue
+
+            chosen_category = ask_human_for_category(categories)
+
+            if chosen_category is None:
+                skipped_count += 1
+                continue
+
+            save_categorization(
+                db,
+                question.id,
+                chosen_category,
+                result.confidence_score,
+                is_automatic=False,
+            )
+            manual_count += 1
 
         print()
         print("Resumen final")
