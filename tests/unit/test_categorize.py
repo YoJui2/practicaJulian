@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.categorize import save_categorization
+from app.categorize import categorize_100, categorize_250, categorize_500, save_categorization
 from app.models import Categorization
 
 
@@ -30,5 +30,20 @@ def test_save_categorization_rolls_back_and_raises_runtime_error():
 
     db.add.assert_called_once()
     db.rollback.assert_called_once_with()
+
+
+def test_fixed_size_categorization_functions_process_the_requested_limit(monkeypatch):
+    limits = []
+
+    def fake_categorize_all(**kwargs):
+        limits.append(kwargs["max_questions"])
+
+    monkeypatch.setattr("app.categorize.categorize_all", fake_categorize_all)
+
+    categorize_100()
+    categorize_250()
+    categorize_500()
+
+    assert limits == [100, 250, 500]
 
 

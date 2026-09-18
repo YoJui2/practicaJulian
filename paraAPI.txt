@@ -31,7 +31,15 @@ poetry run pytest tests/unit/test_classifier.py
 Ejecutar tests por nombre:
 poetry run pytest -k classifier
 
-"poetry run python -m app.categorize" para asignar categorias a preguntas con necesidad de intervencion humana
+Categorizar tandas completas de preguntas pendientes (cada comando procesa como máximo esa cantidad y termina):
+
+poetry run python -m app.categorize --limit 100
+poetry run python -m app.categorize --limit 250
+poetry run python -m app.categorize --limit 500
+
+Tambien se puede ejecutar todo lo pendiente sin limite:
+
+poetry run python -m app.categorize
 
 cargar preguntas de la bd "poetry run python -m app.load_data"
 

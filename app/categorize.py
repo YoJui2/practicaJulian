@@ -9,6 +9,8 @@ Orquesta todo el flujo:
 5. Guarda el resultado en la tabla categorizations
 """
 
+import argparse
+
 from tqdm import tqdm
 
 from app.categories import CATEGORIES, get_category_names
@@ -23,7 +25,7 @@ from app.models import Categorization, Question
 
 
 # Umbral de confianza (70%)
-CONFIDENCE_THRESHOLD = 0.70
+CONFIDENCE_THRESHOLD = 0.30
 
 
 def get_uncategorized_questions(db) -> list:
@@ -58,9 +60,13 @@ def save_categorization(
         raise RuntimeError(f"No se pudo guardar la categorización: {exc}") from exc
 
 
-def categorize_all(batch_size: int = 32, threshold: float = CONFIDENCE_THRESHOLD) -> None:
+def categorize_all(
+    batch_size: int = 32,
+    threshold: float = CONFIDENCE_THRESHOLD,
+    max_questions: int | None = None,
+) -> None:
     """
-    Función principal que ejecuta el flujo completo de categorización.
+    Ejecuta el flujo completo para todas las pendientes o una tanda limitada.
     """
     db = SessionLocal()
     try:
@@ -69,6 +75,8 @@ def categorize_all(batch_size: int = 32, threshold: float = CONFIDENCE_THRESHOLD
         classifier = AIClassifier()
 
         pending_questions = get_uncategorized_questions(db)
+        if max_questions is not None:
+            pending_questions = pending_questions[:max_questions]
 
         print("Resumen inicial")
         print(f"  - Preguntas pendientes: {len(pending_questions)}")
@@ -162,5 +170,33 @@ def categorize_all(batch_size: int = 32, threshold: float = CONFIDENCE_THRESHOLD
         db.close()
 
 
+def categorize_100() -> None:
+    """Categoriza de corrido hasta 100 preguntas pendientes."""
+    categorize_all(max_questions=100)
+
+
+def categorize_250() -> None:
+    """Categoriza de corrido hasta 250 preguntas pendientes."""
+    categorize_all(max_questions=250)
+
+
+def categorize_500() -> None:
+    """Categoriza de corrido hasta 500 preguntas pendientes."""
+    categorize_all(max_questions=500)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Categoriza preguntas pendientes")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        choices=(100, 250, 500),
+        help="cantidad máxima de preguntas a categorizar en esta ejecución",
+    )
+    args = parser.parse_args()
+
+    categorize_all(max_questions=args.limit)
+
+
 if __name__ == "__main__":
-    categorize_all()
+    main()
