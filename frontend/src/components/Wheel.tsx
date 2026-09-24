@@ -7,6 +7,7 @@ interface WheelProps {
   selectedIndex: number | null
   rotation: number
   spinning: boolean
+  loading: boolean
   onSpin: () => void
   onSpinComplete: () => void
 }
@@ -39,6 +40,7 @@ export function Wheel({
   selectedIndex,
   rotation,
   spinning,
+  loading,
   onSpin,
   onSpinComplete,
 }: WheelProps) {
@@ -72,13 +74,14 @@ export function Wheel({
       <div className={styles.wheelStage}>
         <div className={styles.pointer} aria-hidden="true" />
         <div
-          className={styles.wheel}
+          className={`${styles.wheel} ${loading ? styles.loading : ''}`}
           data-testid="wheel-disc"
           role="img"
           aria-label={`Ruleta clásica con ${questionIds.length} sectores`}
           style={
             {
               transform: `rotate(${rotation}deg)`,
+              '--wheel-rotation': `${rotation}deg`,
               background: `conic-gradient(${createGradient(questionIds.length)})`,
             } as CSSProperties
           }
@@ -87,9 +90,14 @@ export function Wheel({
           <span className={styles.hub} aria-hidden="true" />
         </div>
         <div
-          className={styles.labels}
+          className={`${styles.labels} ${loading ? styles.loading : ''}`}
           aria-hidden="true"
-          style={{ transform: `rotate(${rotation}deg)` }}
+          style={
+            {
+              transform: `rotate(${rotation}deg)`,
+              '--wheel-rotation': `${rotation}deg`,
+            } as CSSProperties
+          }
         >
           {questionIds.map((questionId, index) => {
             const angle = index * segmentAngle + segmentAngle / 2

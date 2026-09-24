@@ -232,7 +232,8 @@ function App() {
           questionIds={WHEEL_QUESTION_IDS}
           selectedIndex={selectedIndex}
           rotation={rotation}
-          spinning={phase === 'spinning'}
+          spinning={phase === 'spinning' || phase === 'loading'}
+          loading={phase === 'loading'}
           onSpin={handleSpin}
           onSpinComplete={() => void finishSpin()}
         />

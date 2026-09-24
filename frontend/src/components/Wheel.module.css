@@ -42,6 +42,11 @@
   will-change: transform;
 }
 
+.wheel.loading,
+.labels.loading {
+  animation: wheelLoadingSpin 900ms linear infinite;
+}
+
 .wheel::after {
   position: absolute;
   inset: 0;
@@ -100,6 +105,16 @@
 .selectedLabel {
   scale: 1.3;
   outline: 0.2rem solid #fff;
+}
+
+@keyframes wheelLoadingSpin {
+  from {
+    transform: rotate(var(--wheel-rotation));
+  }
+
+  to {
+    transform: rotate(calc(var(--wheel-rotation) + 360deg));
+  }
 }
 
 .hub {
