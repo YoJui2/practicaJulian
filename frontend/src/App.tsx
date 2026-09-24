@@ -142,8 +142,12 @@ function App() {
       return
     }
 
-    const chosen = new FormData(event.currentTarget).get('option')
-    if (typeof chosen !== 'string' || !chosen.trim()) {
+    const submitter = event.nativeEvent as SubmitEvent
+    const chosen =
+      submitter.submitter instanceof HTMLButtonElement
+        ? submitter.submitter.value
+        : ''
+    if (!chosen.trim()) {
       return
     }
 
