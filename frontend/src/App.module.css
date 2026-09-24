@@ -352,3 +352,255 @@ input:disabled {
     animation: none;
   }
 }
+
+/* Playful game-night visual language */
+.page {
+  position: relative;
+  isolation: isolate;
+  padding-top: 2.75rem;
+}
+
+.page::before,
+.page::after {
+  position: fixed;
+  z-index: -1;
+  color: rgb(255 255 255 / 18%);
+  font-size: 5rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.page::before {
+  top: 13rem;
+  left: 1.5vw;
+  content: '✦';
+  transform: rotate(-16deg);
+}
+
+.page::after {
+  right: 2vw;
+  bottom: 9rem;
+  content: '★';
+  transform: rotate(14deg);
+}
+
+.hero {
+  max-width: 52rem;
+  margin-bottom: 2.25rem;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 0.75rem;
+  border: 3px solid #171329;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  color: #171329;
+  background: #ffdc4a;
+  box-shadow: 4px 4px 0 #171329;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+
+.hero h1 {
+  color: #fffdf7;
+  font-size: clamp(3rem, 8vw, 6.4rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+  text-shadow: 5px 5px 0 #171329;
+}
+
+.hero > p:last-child {
+  max-width: 30rem;
+  margin: 1.25rem auto 0;
+  color: #fffdf7;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.players {
+  gap: 1.25rem;
+}
+
+.playerCard {
+  min-height: 7.25rem;
+  border: 3px solid #171329;
+  border-radius: 1.35rem;
+  color: #171329;
+  background: #fffdf7;
+  box-shadow: 7px 7px 0 #171329;
+  transform: rotate(-1deg);
+}
+
+.playerCard:nth-child(2) {
+  transform: rotate(1deg);
+}
+
+.activePlayer {
+  border-color: #171329;
+  background: #ffdc4a;
+  box-shadow: 7px 7px 0 #171329;
+}
+
+.turnLabel {
+  color: #e94b4b;
+}
+
+.activePlayer .turnLabel {
+  color: #171329;
+}
+
+.playerCard label,
+.questionContent label {
+  color: #5a5273;
+}
+
+input {
+  border: 2px solid #171329;
+  color: #171329;
+  background: #fffdf7;
+}
+
+.score {
+  color: #171329;
+}
+
+.score span {
+  color: #5a5273;
+}
+
+.round {
+  display: table;
+  margin: 0 auto 0.45rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  color: #171329;
+  background: #63e6be;
+  letter-spacing: 0.12em;
+}
+
+.liveStatus {
+  color: #fffdf7;
+  font-weight: 800;
+}
+
+.questionPanel {
+  border: 3px solid #171329;
+  border-radius: 1.8rem;
+  background: #fffdf7;
+  box-shadow: 8px 8px 0 #171329;
+  transform: rotate(1deg);
+}
+
+.questionPanel > h2 {
+  color: #5b3cc4;
+  font-size: 0.9rem;
+}
+
+.emptyState span {
+  border: 3px solid #171329;
+  color: #171329;
+  background: #63e6be;
+  box-shadow: 5px 5px 0 #171329;
+}
+
+.loader {
+  border-color: #ffdc4a;
+  border-top-color: #e94b4b;
+}
+
+.questionMeta span {
+  border: 2px solid #171329;
+  color: #171329;
+  background: #ffdc4a;
+}
+
+.questionMeta span:nth-child(2) {
+  background: #63e6be;
+}
+
+.questionContent h3 {
+  color: #171329;
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  line-height: 1.08;
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.option {
+  min-height: 4.25rem;
+  border: 3px solid #171329;
+  border-radius: 1.15rem;
+  padding: 0.9rem 1.15rem;
+  color: #171329;
+  background: #fffdf7;
+  box-shadow: 4px 4px 0 #171329;
+  font-size: 1rem;
+  font-weight: 900;
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;
+  letter-spacing: 0;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.option:nth-child(1) {
+  color: #fffdf7;
+  background: #d93662;
+}
+
+.option:nth-child(2) {
+  color: #fffdf7;
+  background: #1769aa;
+}
+
+.option:nth-child(3) {
+  color: #171329;
+  background: #ffdc4a;
+}
+
+.option:nth-child(4) {
+  color: #fffdf7;
+  background: #168653;
+}
+
+.option:nth-child(1):hover:not(:disabled),
+.option:nth-child(2):hover:not(:disabled),
+.option:nth-child(4):hover:not(:disabled) {
+  color: #171329;
+}
+
+.option:hover:not(:disabled) {
+  border-color: #171329;
+  background: #fffdf7;
+  box-shadow: 1px 1px 0 #171329;
+  transform: translate(3px, 3px) rotate(-1deg);
+}
+
+.errorState button,
+.questionContent button {
+  border: 3px solid #171329;
+  color: #fffdf7;
+  background: #5b3cc4;
+  box-shadow: 4px 4px 0 #171329;
+}
+
+.errorState button:hover,
+.questionContent button:hover {
+  background: #e94b4b;
+  transform: translate(2px, 2px);
+}
+
+@media (max-width: 780px) {
+  .page {
+    padding-top: 1.5rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 15vw, 5rem);
+  }
+
+  .questionPanel {
+    transform: none;
+  }
+}

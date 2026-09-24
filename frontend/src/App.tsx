@@ -162,9 +162,9 @@ function App() {
   return (
     <main className={styles.page}>
       <header className={styles.hero}>
-        <p className={styles.eyebrow}>Preguntados</p>
-        <h1>La rueda de las preguntas</h1>
-        <p>Dos jugadores, una partida y todas las ganas de jugar.</p>
+        <p className={styles.eyebrow}>🎉 Preguntados</p>
+        <h1>¡Girá y ganá!</h1>
+        <p>Dos jugadores. Una ruleta. ¿Quién se lleva la gloria?</p>
       </header>
 
       <section className={styles.players} aria-label="Jugadores y puntajes">

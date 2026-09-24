@@ -4,10 +4,11 @@
   align-items: center;
   gap: 0.75rem;
   padding: clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 1.5rem;
-  background: rgb(15 12 35 / 82%);
-  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 35%);
+  border: 3px solid #171329;
+  border-radius: 1.8rem;
+  background: #fffdf7;
+  box-shadow: 8px 8px 0 #171329;
+  transform: rotate(-1deg);
 }
 
 .wheelPanel h2,
@@ -16,7 +17,8 @@
 }
 
 .wheelPanel p {
-  color: #c8c2df;
+  color: #5a5273;
+  font-weight: 800;
 }
 
 .wheelStage {
@@ -131,17 +133,18 @@
   border: 0;
   border-radius: 999px;
   padding: 0.9rem 1.4rem;
-  color: #24184d;
-  background: #f1c453;
-  box-shadow: 0 0.35rem 0 #9c721c;
+  border: 3px solid #171329;
+  color: #171329;
+  background: #ffdc4a;
+  box-shadow: 4px 4px 0 #171329;
   font: inherit;
   font-weight: 800;
   cursor: pointer;
 }
 
 .spinButton:hover:not(:disabled) {
-  background: #ffd86c;
-  transform: translateY(-0.1rem);
+  background: #63e6be;
+  transform: translate(2px, 2px);
 }
 
 .spinButton:disabled {
