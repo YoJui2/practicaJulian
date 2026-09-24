@@ -155,7 +155,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wheel {
+  .wheel,
+  .wheel.loading,
+  .labels.loading {
+    animation: none;
     transition-duration: 0.01ms;
   }
 

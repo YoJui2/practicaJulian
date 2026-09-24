@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { getQuestion, QuestionsApiError } from './api/questions'
 import type { Question } from './api/questions'
@@ -10,7 +10,7 @@ import styles from './App.module.css'
 
 type PlayerId = 'playerOne' | 'playerTwo'
 type GamePhase =
-  'ready' | 'spinning' | 'loading' | 'answering' | 'feedback' | 'error'
+  'ready' | 'loading' | 'answering' | 'feedback' | 'error'
 
 interface Player {
   name: string
@@ -39,16 +39,12 @@ function App() {
   const [question, setQuestion] = useState<Question | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
-  const spinCompletionHandled = useRef(false)
-
   const activePlayer = players[activePlayerId]
   const segmentAngle = 360 / WHEEL_QUESTION_IDS.length
   const gameLocked = phase !== 'ready'
 
   const statusMessage = useMemo(() => {
     switch (phase) {
-      case 'spinning':
-        return `La ruleta está eligiendo la pregunta de ${activePlayer.name}.`
       case 'loading':
         return `Buscando la pregunta ${selectedQuestionId} para ${activePlayer.name}.`
       case 'answering':
@@ -89,19 +85,6 @@ function App() {
     }
   }
 
-  async function finishSpin() {
-    if (
-      phase !== 'spinning' ||
-      selectedQuestionId === null ||
-      spinCompletionHandled.current
-    ) {
-      return
-    }
-
-    spinCompletionHandled.current = true
-    await loadQuestion(selectedQuestionId)
-  }
-
   function handleSpin() {
     if (phase !== 'ready') {
       return
@@ -113,13 +96,12 @@ function App() {
     const targetRotation = (360 - selectedCenter) % 360
     const rotationDelta = (targetRotation - currentRotation + 360) % 360
 
-    spinCompletionHandled.current = false
     setSelectedQuestionId(WHEEL_QUESTION_IDS[nextIndex])
     setRotation(currentRotation + rotationDelta + 6 * 360)
     setQuestion(null)
     setFeedback(null)
     setErrorMessage('')
-    setPhase('spinning')
+    void loadQuestion(WHEEL_QUESTION_IDS[nextIndex])
   }
 
   function handlePlayerNameChange(playerId: PlayerId, name: string) {
@@ -228,10 +210,8 @@ function App() {
         <Wheel
           questionIds={WHEEL_QUESTION_IDS}
           rotation={rotation}
-          spinning={phase === 'spinning' || phase === 'loading'}
           loading={phase === 'loading'}
           onSpin={handleSpin}
-          onSpinComplete={() => void finishSpin()}
         />
 
         <section
@@ -247,14 +227,10 @@ function App() {
             </div>
           )}
 
-          {(phase === 'spinning' || phase === 'loading') && (
+          {phase === 'loading' && (
             <div className={styles.loadingState} role="status">
               <span className={styles.loader} aria-hidden="true" />
-              <p>
-                {phase === 'spinning'
-                  ? 'La ruleta ya tiene un ganador…'
-                  : 'Buscando la pregunta en la API…'}
-              </p>
+              <p>Buscando la pregunta en la API…</p>
             </div>
           )}
 

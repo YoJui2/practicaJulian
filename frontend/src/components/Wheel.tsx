@@ -1,14 +1,11 @@
-import { useEffect } from 'react'
-import type { CSSProperties, TransitionEvent } from 'react'
+import type { CSSProperties } from 'react'
 import styles from './Wheel.module.css'
 
 interface WheelProps {
   questionIds: readonly number[]
   rotation: number
-  spinning: boolean
   loading: boolean
   onSpin: () => void
-  onSpinComplete: () => void
 }
 
 const CLASSIC_CATEGORY_COLORS = [
@@ -38,32 +35,10 @@ function createGradient(segmentCount: number): string {
 export function Wheel({
   questionIds,
   rotation,
-  spinning,
   loading,
   onSpin,
-  onSpinComplete,
 }: WheelProps) {
   const segmentAngle = 360 / questionIds.length
-
-  useEffect(() => {
-    if (!spinning) {
-      return
-    }
-
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      onSpinComplete()
-      return
-    }
-
-    const fallback = window.setTimeout(onSpinComplete, 1800)
-    return () => window.clearTimeout(fallback)
-  }, [onSpinComplete, spinning])
-
-  function handleTransitionEnd(event: TransitionEvent<HTMLDivElement>) {
-    if (event.propertyName === 'transform' && spinning) {
-      onSpinComplete()
-    }
-  }
 
   return (
     <section className={styles.wheelPanel} aria-labelledby="wheel-title">
@@ -84,7 +59,6 @@ export function Wheel({
               background: `conic-gradient(${createGradient(questionIds.length)})`,
             } as CSSProperties
           }
-          onTransitionEnd={handleTransitionEnd}
         >
           <span className={styles.hub} aria-hidden="true" />
         </div>
@@ -118,9 +92,9 @@ export function Wheel({
         className={styles.spinButton}
         type="button"
         onClick={onSpin}
-        disabled={spinning}
+        disabled={loading}
       >
-        {spinning ? 'Girando…' : 'Girar la ruleta'}
+        {loading ? 'Girando…' : 'Girar la ruleta'}
       </button>
     </section>
   )
