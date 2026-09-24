@@ -92,18 +92,14 @@
   place-items: center;
   border-radius: 50%;
   color: #171329;
-  font: 900 1.1rem system-ui, 'Segoe UI', sans-serif;
+  font: 900 1.35rem system-ui, 'Segoe UI', sans-serif;
   line-height: 1;
   text-shadow: 0 1px rgb(255 255 255 / 55%);
   transform: translate(-50%, -50%) rotate(var(--label-angle))
-    translateY(-7.2rem);
+    translateY(-7.2rem) rotate(calc(var(--label-angle) * -1));
   transition:
     transform 200ms ease,
     scale 200ms ease;
-}
-
-.selectedLabel {
-  scale: 1.3;
 }
 
 @keyframes wheelLoadingSpin {

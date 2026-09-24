@@ -32,7 +32,6 @@ function App() {
   const [activePlayerId, setActivePlayerId] = useState<PlayerId>('playerOne')
   const [phase, setPhase] = useState<GamePhase>('ready')
   const [round, setRound] = useState(1)
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(
     null,
   )
@@ -115,7 +114,6 @@ function App() {
     const rotationDelta = (targetRotation - currentRotation + 360) % 360
 
     spinCompletionHandled.current = false
-    setSelectedIndex(nextIndex)
     setSelectedQuestionId(WHEEL_QUESTION_IDS[nextIndex])
     setRotation(currentRotation + rotationDelta + 6 * 360)
     setQuestion(null)
@@ -172,7 +170,6 @@ function App() {
       current === 'playerOne' ? 'playerTwo' : 'playerOne',
     )
     setRound((current) => current + 1)
-    setSelectedIndex(null)
     setSelectedQuestionId(null)
     setQuestion(null)
     setFeedback(null)
@@ -230,7 +227,6 @@ function App() {
       <div className={styles.gameLayout}>
         <Wheel
           questionIds={WHEEL_QUESTION_IDS}
-          selectedIndex={selectedIndex}
           rotation={rotation}
           spinning={phase === 'spinning' || phase === 'loading'}
           loading={phase === 'loading'}

@@ -4,7 +4,6 @@ import styles from './Wheel.module.css'
 
 interface WheelProps {
   questionIds: readonly number[]
-  selectedIndex: number | null
   rotation: number
   spinning: boolean
   loading: boolean
@@ -20,6 +19,7 @@ const CLASSIC_CATEGORY_COLORS = [
   '#4ccf64',
   '#9b4de8',
 ]
+const CATEGORY_EMOJIS = ['🏛️', '⚽', '🌍', '🎨', '🔬', '🎬']
 
 function segmentColor(index: number): string {
   return CLASSIC_CATEGORY_COLORS[index % CLASSIC_CATEGORY_COLORS.length]
@@ -37,7 +37,6 @@ function createGradient(segmentCount: number): string {
 
 export function Wheel({
   questionIds,
-  selectedIndex,
   rotation,
   spinning,
   loading,
@@ -104,13 +103,11 @@ export function Wheel({
 
             return (
               <span
-                className={`${styles.segmentLabel} ${
-                  selectedIndex === index ? styles.selectedLabel : ''
-                }`}
+                className={styles.segmentLabel}
                 key={questionId}
                 style={{ '--label-angle': `${angle}deg` } as CSSProperties}
               >
-                ?
+                {CATEGORY_EMOJIS[index % CATEGORY_EMOJIS.length]}
               </span>
             )
           })}
