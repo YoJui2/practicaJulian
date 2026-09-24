@@ -38,7 +38,6 @@ function App() {
   )
   const [rotation, setRotation] = useState(0)
   const [question, setQuestion] = useState<Question | null>(null)
-  const [answer, setAnswer] = useState('')
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const spinCompletionHandled = useRef(false)
@@ -54,7 +53,7 @@ function App() {
       case 'loading':
         return `Buscando la pregunta ${selectedQuestionId} para ${activePlayer.name}.`
       case 'answering':
-        return `Turno de ${activePlayer.name}. Ingresá tu respuesta.`
+        return `Turno de ${activePlayer.name}. Elegí una opción.`
       case 'feedback':
         return feedback?.correct
           ? `Respuesta correcta. ${activePlayer.name} ganó ${POINTS_PER_CORRECT_ANSWER} puntos.`
@@ -80,7 +79,6 @@ function App() {
     try {
       const nextQuestion = await getQuestion(questionId)
       setQuestion(nextQuestion)
-      setAnswer('')
       setPhase('answering')
     } catch (error) {
       setErrorMessage(
@@ -122,7 +120,6 @@ function App() {
     setRotation(currentRotation + rotationDelta + 6 * 360)
     setQuestion(null)
     setFeedback(null)
-    setAnswer('')
     setErrorMessage('')
     setPhase('spinning')
   }
@@ -141,11 +138,16 @@ function App() {
   function handleAnswerSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (phase !== 'answering' || !question || !answer.trim()) {
+    if (phase !== 'answering' || !question) {
       return
     }
 
-    const correct = normalizeAnswer(answer) === normalizeAnswer(question.answer)
+    const chosen = new FormData(event.currentTarget).get('option')
+    if (typeof chosen !== 'string' || !chosen.trim()) {
+      return
+    }
+
+    const correct = normalizeAnswer(chosen) === normalizeAnswer(question.answer)
 
     if (correct) {
       setPlayers((current) => ({
@@ -157,7 +159,7 @@ function App() {
       }))
     }
 
-    setFeedback({ correct, submittedAnswer: answer.trim() })
+    setFeedback({ correct, submittedAnswer: chosen.trim() })
     setPhase('feedback')
   }
 
@@ -169,7 +171,6 @@ function App() {
     setSelectedIndex(null)
     setSelectedQuestionId(null)
     setQuestion(null)
-    setAnswer('')
     setFeedback(null)
     setErrorMessage('')
     setPhase('ready')
@@ -279,17 +280,19 @@ function App() {
 
               {phase === 'answering' ? (
                 <form onSubmit={handleAnswerSubmit}>
-                  <label htmlFor="answer">Tu respuesta</label>
-                  <input
-                    id="answer"
-                    value={answer}
-                    autoComplete="off"
-                    placeholder="Escribí la respuesta…"
-                    onChange={(event) => setAnswer(event.target.value)}
-                  />
-                  <button type="submit" disabled={!answer.trim()}>
-                    Responder
-                  </button>
+                  <div className={styles.options} role="group" aria-label="Opciones de respuesta">
+                    {question.options.map((option) => (
+                      <button
+                        className={styles.option}
+                        key={option}
+                        type="submit"
+                        name="option"
+                        value={option}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
                 </form>
               ) : (
                 <div

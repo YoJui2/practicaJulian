@@ -11,15 +11,18 @@ interface WheelProps {
   onSpinComplete: () => void
 }
 
-const SEGMENT_COLORS = ['#d82424', '#f2bd2d', '#1769aa', '#713b8e', '#198754']
+function segmentColor(index: number, segmentCount: number): string {
+  const hue = Math.round((index * 360) / segmentCount)
+  return `hsl(${hue} 80% 58%)`
+}
 
 function createGradient(segmentCount: number): string {
   const segmentAngle = 360 / segmentCount
 
-  return SEGMENT_COLORS.map((color, index) => {
+  return Array.from({ length: segmentCount }, (_, index) => {
     const start = index * segmentAngle
     const end = (index + 1) * segmentAngle
-    return `${color} ${start}deg ${end}deg`
+    return `${segmentColor(index, segmentCount)} ${start}deg ${end}deg`
   }).join(', ')
 }
 
@@ -68,6 +71,9 @@ export function Wheel({
           }
           onTransitionEnd={handleTransitionEnd}
         >
+          <span className={styles.hub} aria-hidden="true" />
+        </div>
+        <div className={styles.labels} aria-hidden="true">
           {questionIds.map((questionId, index) => {
             const angle = index * segmentAngle + segmentAngle / 2
 
@@ -78,13 +84,11 @@ export function Wheel({
                 }`}
                 key={questionId}
                 style={{ '--label-angle': `${angle}deg` } as CSSProperties}
-                aria-hidden="true"
               >
                 ?
               </span>
             )
           })}
-          <span className={styles.hub} aria-hidden="true" />
         </div>
       </div>
 

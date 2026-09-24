@@ -21,6 +21,7 @@ function mockQuestionResponse(fetchMock: ReturnType<typeof vi.fn>) {
         answer: 'Buenos Aires',
         category: 'Geografía',
         source: null,
+        options: ['Buenos Aires', 'Rosario', 'Córdoba', 'Mendoza'],
       }),
     })
   })
@@ -49,8 +50,9 @@ describe('trivia game', () => {
       }),
     ).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Tu respuesta'), '  buenos aires ')
-    await user.click(screen.getByRole('button', { name: 'Responder' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Buenos Aires' }),
+    )
 
     expect(await screen.findByText('¡Correcto!')).toBeInTheDocument()
     expect(screen.getByText('10')).toBeInTheDocument()
@@ -106,8 +108,7 @@ describe('trivia game', () => {
     await screen.findByRole('heading', {
       name: '¿Cuál es la capital de Argentina?',
     })
-    await user.type(screen.getByLabelText('Tu respuesta'), 'Córdoba')
-    await user.click(screen.getByRole('button', { name: 'Responder' }))
+    await user.click(screen.getByRole('button', { name: 'Córdoba' }))
 
     expect(await screen.findByText('No es correcto')).toBeInTheDocument()
     expect(screen.getByText(/Tu respuesta:/)).toHaveTextContent(

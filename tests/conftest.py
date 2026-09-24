@@ -9,6 +9,19 @@ from app.main import app
 from app.models import Base
 
 
+class _FakeTextGenerator:
+    def __call__(self, prompt, **kwargs):
+        return [{"generated_text": "Cordoba; Rosario; Mendoza"}]
+
+
+@pytest.fixture(autouse=True)
+def fake_options_generator(monkeypatch):
+    monkeypatch.setattr(
+        "app.options._get_generator",
+        lambda: _FakeTextGenerator(),
+    )
+
+
 @pytest.fixture
 def client(monkeypatch):
     test_engine = create_engine(

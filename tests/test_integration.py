@@ -23,10 +23,35 @@ def test_api_can_create_read_and_count_a_question(client):
         headers={"Origin": "http://localhost:5173"},
     )
     assert retrieved.status_code == 200
-    assert retrieved.json()["answer"] == "William Shakespeare"
+    body = retrieved.json()
+    assert body["answer"] == "William Shakespeare"
+    assert len(body["options"]) == 4
+    assert len(set(body["options"])) == 4
+    assert "William Shakespeare" in body["options"]
+    assert {"Cordoba", "Rosario", "Mendoza"}.issubset(set(body["options"]))
     assert retrieved.headers["access-control-allow-origin"] == (
         "http://localhost:5173"
     )
 
     stats = client.get("/stats")
     assert stats.json() == {"total": 1, "by_category": {"history": 1}}
+
+
+def test_get_question_options_are_generated_instead_of_read_from_the_dataset(client):
+    created = client.post(
+        "/questions",
+        json={
+            "question": "Pregunta unica?",
+            "answer": "Respuesta Unica",
+            "category": "solo",
+        },
+    )
+    assert created.status_code == 201
+
+    body = client.get(f"/questions/{created.json()['id']}").json()
+
+    assert len(body["options"]) == 4
+    assert len(set(body["options"])) == 4
+    assert body["answer"] == "Respuesta Unica"
+    assert "Respuesta Unica" in body["options"]
+    assert {"Cordoba", "Rosario", "Mendoza"}.issubset(set(body["options"]))

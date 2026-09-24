@@ -6,6 +6,7 @@ export interface Question {
   answer: string
   category: string | null
   source: string | null
+  options: string[]
 }
 
 export class QuestionsApiError extends Error {
@@ -22,6 +23,8 @@ function isQuestion(value: unknown, requestedId: number): value is Question {
 
   const question = value as Record<string, unknown>
 
+  const options = question.options
+
   return (
     question.id === requestedId &&
     typeof question.question === 'string' &&
@@ -29,7 +32,13 @@ function isQuestion(value: unknown, requestedId: number): value is Question {
     typeof question.answer === 'string' &&
     question.answer.trim().length > 0 &&
     (question.category === null || typeof question.category === 'string') &&
-    (question.source === null || typeof question.source === 'string')
+    (question.source === null || typeof question.source === 'string') &&
+    Array.isArray(options) &&
+    options.length >= 1 &&
+    options.every(
+      (option) => typeof option === 'string' && option.trim().length > 0,
+    ) &&
+    options.includes(question.answer)
   )
 }
 
@@ -50,7 +59,7 @@ export async function getQuestion(
     }
 
     throw new QuestionsApiError(
-      'No se pudo conectar con la API. Revisá que FastAPI esté funcionando.',
+      'No se pudo conectar con la API. Revisá que FastAPI esté corriendo, que VITE_API_BASE_URL apunte al puerto correcto y que el origen de Vite esté permitido por CORS.',
     )
   }
 

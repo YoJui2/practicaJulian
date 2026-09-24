@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db, engine
 from app.models import Base, Categorization, Question
 from app.categories import CATEGORIES
+from app.options import build_options
 
 
 class QuestionCreate(BaseModel):
@@ -126,7 +127,14 @@ def get_question(question_id: int, db: Session = Depends(get_db)):
     question = db.query(Question).filter(Question.id == question_id).first()
     if not question:
         return {"error": "Pregunta no encontrada"}
-    return question
+    return {
+        "id": question.id,
+        "question": question.question,
+        "answer": question.answer,
+        "category": question.category,
+        "source": question.source,
+        "options": build_options(question.question, question.answer),
+    }
 
 
 @app.get("/categories")

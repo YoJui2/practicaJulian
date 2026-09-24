@@ -253,15 +253,32 @@ input:disabled {
   margin-top: 2rem;
 }
 
-.questionContent form input {
-  border-color: #b9a9d3;
-  color: #201a38;
-  background: #fff;
-  font-size: 1.05rem;
+.options {
+  display: grid;
+  gap: 0.65rem;
 }
 
-.questionContent form button {
-  margin-top: 0.4rem;
+.option {
+  justify-self: stretch;
+  border: 1px solid #b9a9d3;
+  border-radius: 0.9rem;
+  padding: 0.85rem 1rem;
+  color: #201a38;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option:hover:not(:disabled) {
+  border-color: #6d3ca6;
+  background: #f4eefe;
+}
+
+.option:focus-visible {
+  outline: 0.2rem solid rgb(109 60 166 / 45%);
+  outline-offset: 0.1rem;
 }
 
 .questionContent button:disabled {

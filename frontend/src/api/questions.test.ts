@@ -22,6 +22,7 @@ describe('getQuestion', () => {
       answer: 'Buenos Aires',
       category: 'Geografía',
       source: null,
+      options: ['Buenos Aires', 'Rosario', 'Córdoba', 'Mendoza'],
     }
     const fetchMock = vi.fn().mockResolvedValue(response(question))
     vi.stubGlobal('fetch', fetchMock)
@@ -63,6 +64,24 @@ describe('getQuestion', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(response({ id: 7, question: 'Incompleta' })),
+    )
+
+    await expect(getQuestion(7)).rejects.toThrow('formato inesperado')
+  })
+
+  it('rejects a question without answer options', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        response({
+          id: 7,
+          question: '¿Cuál es la capital de Argentina?',
+          answer: 'Buenos Aires',
+          category: 'Geografía',
+          source: null,
+          options: ['Rosario', 'Córdoba', 'Mendoza'],
+        }),
+      ),
     )
 
     await expect(getQuestion(7)).rejects.toThrow('formato inesperado')
