@@ -13,6 +13,18 @@ GENERIC_OPTIONS = {
     "todas las anteriores",
     "no se puede saber",
 }
+NUMBER_WORDS = {
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+}
 
 _generator: Callable | None = None
 
@@ -33,12 +45,23 @@ def _split_candidates(output: str) -> list[str]:
     return cleaned
 
 
+def _is_numeric(value: str) -> bool:
+    return bool(re.fullmatch(r"[+-]?\d+(?:[.,]\d+)?", value.strip()))
+
+
+def _matches_answer_type(candidate: str, answer: str) -> bool:
+    if _is_numeric(answer):
+        return _is_numeric(candidate)
+    return not _is_numeric(candidate) and candidate.lower() not in NUMBER_WORDS
+
+
 def generate_distractors(
     question: str,
     answer: str,
     count: int = DISTRACTOR_COUNT,
 ) -> list[str]:
     """Genera distractores plausibles en lenguaje natural viendo la pregunta."""
+    clean_correct = _answer_clean(answer).lower()
     try:
         generator = _get_generator()
         prompt = (
@@ -50,27 +73,49 @@ def generate_distractors(
             f"Correct answer: {answer}\n"
             f"Number of incorrect answers: {count}\n"
             "If the correct answer is a number, return different plausible numbers "
-            "near it, not words or team names."
-        )
-        outputs = generator(
-            prompt,
-            max_new_tokens=48,
-            do_sample=True,
-            temperature=0.9,
-            num_return_sequences=count * 2,
+            "near it, not words or team names. "
+            + (
+                "The correct answer is a person's name, so return different "
+                "plausible people's names."
+                if len(answer.split()) >= 2
+                and all(word[:1].isupper() for word in answer.split())
+                else ""
+            )
         )
         candidates = []
-        for result in outputs:
-            candidates.extend(_split_candidates(result.get("generated_text", "")))
+        for attempt in range(3):
+            outputs = generator(
+                prompt,
+                max_new_tokens=48,
+                do_sample=True,
+                temperature=0.9 + attempt * 0.1,
+                num_return_sequences=count * 2,
+            )
+            candidates.extend(
+                candidate
+                for result in outputs
+                for candidate in _split_candidates(
+                    result.get("generated_text", "")
+                )
+            )
+            valid_candidates = {
+                candidate.lower()
+                for candidate in candidates
+                if candidate.lower() != clean_correct
+                and candidate.lower() not in GENERIC_OPTIONS
+                and _matches_answer_type(candidate, answer)
+            }
+            if len(valid_candidates) >= count:
+                break
     except Exception:
         candidates = []
 
-    clean_correct = _answer_clean(answer).lower()
     distractors: list[str] = []
     for candidate in candidates:
         if (
             candidate.lower() == clean_correct
             or candidate.lower() in GENERIC_OPTIONS
+            or not _matches_answer_type(candidate, answer)
             or candidate.lower() in {item.lower() for item in distractors}
         ):
             continue

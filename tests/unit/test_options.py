@@ -44,6 +44,24 @@ def test_generate_distractors_strips_numbering_and_whitespace(monkeypatch):
     assert distractors == ["Cordoba", "Rosario", "Mendoza"]
 
 
+def test_generate_distractors_rejects_numbers_for_a_name_answer(monkeypatch):
+    patch_generator(
+        monkeypatch,
+        "2\none\nHasnain Masoodi\nRahul Gandhi\nNarendra Modi",
+    )
+
+    distractors = generate_distractors(
+        "To whom did Mehbooba Mufti save contest the 2019 elections?",
+        "Mehbooba Mufti",
+    )
+
+    assert "2" not in distractors
+    assert "one" not in distractors
+    assert {"Hasnain Masoodi", "Rahul Gandhi", "Narendra Modi"}.issubset(
+        set(distractors)
+    )
+
+
 def test_generate_distractors_pads_with_fallbacks_when_output_is_empty(monkeypatch):
     patch_generator(monkeypatch, "   \n ")
 
