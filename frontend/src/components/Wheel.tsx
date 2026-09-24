@@ -41,6 +41,11 @@ export function Wheel({
       return
     }
 
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      onSpinComplete()
+      return
+    }
+
     const fallback = window.setTimeout(onSpinComplete, 1800)
     return () => window.clearTimeout(fallback)
   }, [onSpinComplete, spinning])
@@ -73,7 +78,11 @@ export function Wheel({
         >
           <span className={styles.hub} aria-hidden="true" />
         </div>
-        <div className={styles.labels} aria-hidden="true">
+        <div
+          className={styles.labels}
+          aria-hidden="true"
+          style={{ transform: `rotate(${rotation}deg)` }}
+        >
           {questionIds.map((questionId, index) => {
             const angle = index * segmentAngle + segmentAngle / 2
 
