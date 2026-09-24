@@ -54,6 +54,10 @@ Conservar solo las primeras 20 preguntas sin seleccionar por ID:
 
 docker compose exec -T db psql -U admin -d questions_db -c "BEGIN; CREATE TEMP TABLE questions_to_keep ON COMMIT DROP AS SELECT id FROM questions ORDER BY ctid LIMIT 50; DELETE FROM categorizations WHERE question_id NOT IN (SELECT id FROM questions_to_keep); DELETE FROM questions WHERE id NOT IN (SELECT id FROM questions_to_keep); COMMIT;"
 
+Borrar todas las categorías asignadas (deja las preguntas intactas). Después se pueden re-categorizar con el comando de categorizar:
+
+docker compose exec -T db psql -U admin -d questions_db -c "DELETE FROM categorizations;"
+
 Unitarios
 para test, moneypatch reemplaza el input, permitiendo cambiar temporalmente partes del programa, testeando revisiones human in loop
 para test, MagickMock crea objetos falsos durante las pruebas. Permite simular una función, un servicio o una dependencia sin ejecutar su comportamiento real
@@ -99,3 +103,8 @@ concepto:
  test validacion: confirma que el codigo sea "correcto" para el usuario y no solo que "corre"
 
  test data quality: verifica que no hayan datos nulos en columnas criticas, valida que los tipos de datos sean correctos
+
+
+
+
+ para iniciar el juego en power: ".\iniciar-juego.bat" dentro de la carpeta practicasjulian

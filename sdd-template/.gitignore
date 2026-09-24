@@ -1,0 +1,33 @@
+# Local tool state
+.opencode/cache/
+.claude/settings.local.json
+.claude/worktrees/
+.mcp.json
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output — extend per the adopted stack
+node_modules/
+dist/
+build/
+__pycache__/
+*.egg-info/
+.venv/
+venv/
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Coverage and test output
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/

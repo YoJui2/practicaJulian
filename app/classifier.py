@@ -8,6 +8,9 @@ Este módulo provee dos estrategias de clasificación:
 TAREA: Implementar la clase AIClassifier con los métodos indicados.
 """
 from dataclasses import dataclass
+import pickle
+from pathlib import Path
+
 from transformers import pipeline
 
 
@@ -34,17 +37,45 @@ class AIClassifier:
     una categoría a un texto dado.
     """
 
-    def __init__(self, model_name: str = "facebook/bart-large-mnli"):  #Inicializa el clasificador cargando el modelo de Hugging Face.
-
+    def __init__(
+        self,
+        model_name: str = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+        trained_model_path: str | Path = "models/modelomainv1.pkl",
+    ):
+        """Carga modelomainv1 si existe y usa zero-shot como fallback."""
         self.model_name = model_name
-        print("Cargando modelo de IA...")
-        self.pipeline = pipeline(
-            "zero-shot-classification",
-            model=model_name
-        )
-        print(f"Modelo cargado: {model_name}")
+        self.trained_model_path = Path(trained_model_path)
+        self.supervised_model = None
 
-    def classify(self, text: str, candidate_labels: list[str]) -> ClassificationResult:  #Clasifica un texto individual contra una lista de categorías candidatas.
+        if self.trained_model_path.exists():
+            with self.trained_model_path.open("rb") as file:
+                self.supervised_model = pickle.load(file)
+            print(f"Modelo supervisado cargado: {self.trained_model_path}")
+        else:
+            print("Cargando modelo de IA...")
+            self.pipeline = pipeline(
+                "zero-shot-classification",
+                model=model_name,
+            )
+            print(f"Modelo cargado: {model_name}")
+
+    def classify(self, text: str, candidate_labels: list[str]) -> ClassificationResult:
+        if self.supervised_model is not None:
+            vectorizer = self.supervised_model["vectorizer"]
+            classifier = self.supervised_model["classifier"]
+            probabilities = classifier.predict_proba(vectorizer.transform([text]))[0]
+            scores = dict(zip(classifier.classes_, probabilities))
+            if candidate_labels:
+                scores = {
+                    label: float(scores.get(label, 0.0))
+                    for label in candidate_labels
+                }
+            category_name, confidence_score = max(scores.items(), key=lambda item: item[1])
+            return ClassificationResult(
+                category_name=category_name,
+                confidence_score=float(confidence_score),
+                all_scores=scores,
+            )
 
         result = self.pipeline(text, candidate_labels=candidate_labels)
 
