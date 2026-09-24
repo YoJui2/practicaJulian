@@ -11,9 +11,17 @@ interface WheelProps {
   onSpinComplete: () => void
 }
 
-function segmentColor(index: number, segmentCount: number): string {
-  const hue = Math.round((index * 360) / segmentCount)
-  return `hsl(${hue} 80% 58%)`
+const CLASSIC_CATEGORY_COLORS = [
+  '#f4c542',
+  '#e94b4b',
+  '#3d8edb',
+  '#f08b3e',
+  '#4ccf64',
+  '#9b4de8',
+]
+
+function segmentColor(index: number): string {
+  return CLASSIC_CATEGORY_COLORS[index % CLASSIC_CATEGORY_COLORS.length]
 }
 
 function createGradient(segmentCount: number): string {
@@ -22,7 +30,7 @@ function createGradient(segmentCount: number): string {
   return Array.from({ length: segmentCount }, (_, index) => {
     const start = index * segmentAngle
     const end = (index + 1) * segmentAngle
-    return `${segmentColor(index, segmentCount)} ${start}deg ${end}deg`
+    return `${segmentColor(index)} ${start}deg ${end}deg`
   }).join(', ')
 }
 
