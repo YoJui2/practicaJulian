@@ -14,11 +14,33 @@ class _FakeTextGenerator:
         return [{"generated_text": "Cordoba; Rosario; Mendoza"}]
 
 
+class _FakeTranslationTokenizer:
+    def __call__(self, texts, **kwargs):
+        return {"input_ids": list(texts)}
+
+    def decode(self, sequence, **kwargs):
+        return f"es:{sequence[0]}"
+
+
+class _FakeTranslationModel:
+    def generate(self, **kwargs):
+        return [[text] for text in kwargs["input_ids"]]
+
+
 @pytest.fixture(autouse=True)
 def fake_options_generator(monkeypatch):
     monkeypatch.setattr(
         "app.options._get_generator",
         lambda: _FakeTextGenerator(),
+    )
+
+
+@pytest.fixture(autouse=True)
+def fake_translator(monkeypatch):
+    monkeypatch.setattr("app.translator._cache", {})
+    monkeypatch.setattr(
+        "app.translator._get_translator",
+        lambda: (_FakeTranslationTokenizer(), _FakeTranslationModel()),
     )
 
 

@@ -1,5 +1,5 @@
 from app.database import Base
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
@@ -15,6 +15,11 @@ class Question(Base):
 
     categorizations = relationship(
         "Categorization",
+        back_populates="question",
+        cascade="all, delete-orphan",
+    )
+    translations = relationship(
+        "Translation",
         back_populates="question",
         cascade="all, delete-orphan",
     )
@@ -35,3 +40,23 @@ class Categorization(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
     question = relationship("Question", back_populates="categorizations")
+
+
+class Translation(Base):
+    """
+    Guarda la traducción de una pregunta y su respuesta a un idioma.
+    """
+    __tablename__ = "translations"
+    __table_args__ = (
+        UniqueConstraint("question_id", "lang", name="uix_question_lang"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
+    lang = Column(String(10), nullable=False)
+    question_translated = Column(Text, nullable=False)
+    answer_translated = Column(Text, nullable=False)
+    is_automatic = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    question = relationship("Question", back_populates="translations")

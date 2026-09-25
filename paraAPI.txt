@@ -41,6 +41,17 @@ Tambien se puede ejecutar todo lo pendiente sin limite:
 
 poetry run python -m app.categorize
 
+Traducir preguntas y respuestas al espanol (tanda limitada, igual que categorizar):
+
+poetry run python -m app.translate --limit 100
+poetry run python -m app.translate --limit 250
+poetry run python -m app.translate --limit 500
+poetry run python -m app.translate
+
+Modelo de traduccion:
+Usa Helsinki-NLP/opus-mt-en-es (en → es) o el definido por la variable TRANSLATION_MODEL.
+Guarda en la tabla translations (question_id, lang, question_translated, answer_translated).
+
 cargar preguntas de la bd "poetry run python -m app.load_data"
 
 Ver cuantas preguntas hay:
@@ -108,3 +119,10 @@ concepto:
 
 
  para iniciar el juego en power: ".\iniciar-juego.bat" dentro de la carpeta practicasjulian
+
+ como se genera options
+Usa google/flan-t5-base para generar distractores según cada pregunta.
+Compatible con transformers 5.15.1.
+Genera varias respuestas y selecciona tres distintas.
+Evita opciones genéricas como “todas las anteriores”.
+Mantiene OPTIONS_MODEL para cambiar el modelo por variable de entorno.

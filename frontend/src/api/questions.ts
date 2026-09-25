@@ -7,6 +7,7 @@ export interface Question {
   category: string | null
   source: string | null
   options: string[]
+  lang?: string
 }
 
 export class QuestionsApiError extends Error {
@@ -38,7 +39,8 @@ function isQuestion(value: unknown, requestedId: number): value is Question {
     options.every(
       (option) => typeof option === 'string' && option.trim().length > 0,
     ) &&
-    options.includes(question.answer)
+    options.includes(question.answer) &&
+    (question.lang === undefined || typeof question.lang === 'string')
   )
 }
 

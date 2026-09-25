@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +10,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db, engine
 from app.models import Base, Categorization, Question
 from app.categories import CATEGORIES
+from app.live_translation import translate_question
 from app.options import build_options
+from app.translator import DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG
 
 
 class QuestionCreate(BaseModel):
@@ -123,17 +126,39 @@ def stats(db: Session = Depends(get_db)):
 
 
 @app.get("/questions/{question_id}")
-def get_question(question_id: int, db: Session = Depends(get_db)):
+def get_question(
+    question_id: int,
+    lang: Literal["es", "en"] = DEFAULT_TARGET_LANG,
+    db: Session = Depends(get_db),
+):
     question = db.query(Question).filter(Question.id == question_id).first()
     if not question:
         return {"error": "Pregunta no encontrada"}
+
+    if lang == DEFAULT_SOURCE_LANG:
+        return {
+            "id": question.id,
+            "question": question.question,
+            "answer": question.answer,
+            "category": question.category,
+            "source": question.source,
+            "options": build_options(question.question, question.answer),
+            "lang": DEFAULT_SOURCE_LANG,
+        }
+
+    translated = translate_question(
+        question.question,
+        question.answer,
+        target_lang=lang,
+    )
     return {
         "id": question.id,
-        "question": question.question,
-        "answer": question.answer,
+        "question": translated["question"],
+        "answer": translated["answer"],
         "category": question.category,
         "source": question.source,
-        "options": build_options(question.question, question.answer),
+        "options": translated["options"],
+        "lang": translated["lang"],
     }
 
 

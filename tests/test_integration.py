@@ -24,11 +24,15 @@ def test_api_can_create_read_and_count_a_question(client):
     )
     assert retrieved.status_code == 200
     body = retrieved.json()
-    assert body["answer"] == "William Shakespeare"
+    assert body["question"] == "es:Who wrote Hamlet?"
+    assert body["answer"] == "es:William Shakespeare"
+    assert body["lang"] == "es"
     assert len(body["options"]) == 4
     assert len(set(body["options"])) == 4
-    assert "William Shakespeare" in body["options"]
-    assert {"Cordoba", "Rosario", "Mendoza"}.issubset(set(body["options"]))
+    assert "es:William Shakespeare" in body["options"]
+    assert {"es:Cordoba", "es:Rosario", "es:Mendoza"}.issubset(
+        set(body["options"])
+    )
     assert retrieved.headers["access-control-allow-origin"] == (
         "http://localhost:5173"
     )
@@ -52,6 +56,37 @@ def test_get_question_options_are_generated_instead_of_read_from_the_dataset(cli
 
     assert len(body["options"]) == 4
     assert len(set(body["options"])) == 4
-    assert body["answer"] == "Respuesta Unica"
-    assert "Respuesta Unica" in body["options"]
+    assert body["answer"] == "es:Respuesta Unica"
+    assert "es:Respuesta Unica" in body["options"]
+    assert {"es:Cordoba", "es:Rosario", "es:Mendoza"}.issubset(
+        set(body["options"])
+    )
+
+
+def test_get_question_returns_the_original_language_when_requested(client):
+    created = client.post(
+        "/questions",
+        json={
+            "question": "Who wrote Hamlet?",
+            "answer": "William Shakespeare",
+        },
+    )
+
+    body = client.get(f"/questions/{created.json()['id']}?lang=en").json()
+
+    assert body["lang"] == "en"
+    assert body["question"] == "Who wrote Hamlet?"
+    assert body["answer"] == "William Shakespeare"
+    assert "William Shakespeare" in body["options"]
     assert {"Cordoba", "Rosario", "Mendoza"}.issubset(set(body["options"]))
+
+
+def test_get_question_rejects_an_unsupported_language(client):
+    created = client.post(
+        "/questions",
+        json={"question": "Who wrote Hamlet?", "answer": "William Shakespeare"},
+    )
+
+    response = client.get(f"/questions/{created.json()['id']}?lang=fr")
+
+    assert response.status_code == 422

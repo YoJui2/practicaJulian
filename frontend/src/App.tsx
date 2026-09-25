@@ -252,6 +252,9 @@ function App() {
               <div className={styles.questionMeta}>
                 <span>Pregunta #{question.id}</span>
                 {question.category && <span>{question.category}</span>}
+                {question.lang && (
+                  <span>Traducida automáticamente ({question.lang})</span>
+                )}
               </div>
               <h3>{question.question}</h3>
 

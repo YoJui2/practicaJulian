@@ -22,6 +22,7 @@ function mockQuestionResponse(fetchMock: ReturnType<typeof vi.fn>) {
         category: 'Geografía',
         source: null,
         options: ['Buenos Aires', 'Rosario', 'Córdoba', 'Mendoza'],
+        lang: 'es',
       }),
     })
   })
@@ -58,6 +59,51 @@ describe('trivia game', () => {
     expect(screen.getByText('10')).toBeInTheDocument()
     expect(screen.getByText('Siguiente jugador')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('shows that the question was translated automatically', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+
+    expect(
+      await screen.findByText('Traducida automáticamente (es)'),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the translation notice when the API does not report a language', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          id: Number(url.split('/').at(-1)),
+          question: '¿Cuál es la capital de Argentina?',
+          answer: 'Buenos Aires',
+          category: 'Geografía',
+          source: null,
+          options: ['Buenos Aires', 'Rosario', 'Córdoba', 'Mendoza'],
+        }),
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '¿Cuál es la capital de Argentina?',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/Traducida automáticamente/),
+    ).not.toBeInTheDocument()
   })
 
   it('retries the same question after an API connection error', async () => {

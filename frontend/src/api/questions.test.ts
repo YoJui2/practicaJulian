@@ -34,6 +34,40 @@ describe('getQuestion', () => {
     )
   })
 
+  it('accepts a translated question that reports its language', async () => {
+    const question = {
+      id: 7,
+      question: '¿Cuál es la capital de Argentina?',
+      answer: 'Buenos Aires',
+      category: 'Geografía',
+      source: null,
+      options: ['Buenos Aires', 'Rosario', 'Córdoba', 'Mendoza'],
+      lang: 'es',
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response(question)))
+
+    await expect(getQuestion(7)).resolves.toEqual(question)
+  })
+
+  it('rejects a question with an invalid language', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        response({
+          id: 7,
+          question: '¿Cuál es la capital de Argentina?',
+          answer: 'Buenos Aires',
+          category: 'Geografía',
+          source: null,
+          options: ['Buenos Aires', 'Rosario', 'Córdoba', 'Mendoza'],
+          lang: 42,
+        }),
+      ),
+    )
+
+    await expect(getQuestion(7)).rejects.toThrow('formato inesperado')
+  })
+
   it('turns API errors into useful messages', async () => {
     vi.stubGlobal(
       'fetch',
