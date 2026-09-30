@@ -18,6 +18,8 @@ dependencies = [
     "torch (>=2.4.0)",
     "sentence-transformers (>=5.6.0,<6.0.0)",
     "scikit-learn (>=1.9.0,<2.0.0)",
+    "sentencepiece (>=0.2.0,<0.3.0)",
+    "sacremoses (>=0.1.1,<0.2.0)",
     "tqdm (>=4.68.3,<5.0.0)"
 ]
 

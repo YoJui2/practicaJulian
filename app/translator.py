@@ -14,7 +14,7 @@ DEFAULT_TARGET_LANG = "es"
 DEFAULT_SOURCE_LANG = "en"
 DEFAULT_TRANSLATION_MODEL = "Helsinki-NLP/opus-mt-en-es"
 MAX_INPUT_TOKENS = 512
-MAX_NEW_TOKENS = 256
+MAX_GENERATED_TOKENS = 512
 
 SPANISH_MARKERS = frozenset(
     {
@@ -112,7 +112,7 @@ def _generate(texts: list[str]) -> list[str]:
         truncation=True,
         max_length=MAX_INPUT_TOKENS,
     )
-    outputs = model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS)
+    outputs = model.generate(**inputs, max_length=MAX_GENERATED_TOKENS)
     return [
         tokenizer.decode(sequence, skip_special_tokens=True).strip()
         for sequence in outputs
