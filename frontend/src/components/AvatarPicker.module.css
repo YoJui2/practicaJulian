@@ -1,0 +1,192 @@
+.picker {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.trigger {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  border: 4px solid #073b4c;
+  padding: 0.45rem 0.65rem;
+  background: #fff8ef;
+  box-shadow: 5px 5px 0 #073b4c;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.trigger:hover {
+  background: #ffd166;
+  box-shadow: 7px 7px 0 #073b4c;
+  transform: translate(-2px, -2px);
+}
+
+.trigger[aria-expanded='true'] {
+  background: #ffd166;
+}
+
+.preview {
+  display: block;
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.hint {
+  color: #073b4c;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.backdrop {
+  position: fixed;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgb(7 59 76 / 72%);
+  inset: 0;
+}
+
+.window {
+  width: min(100%, 34rem);
+  border: 5px solid #073b4c;
+  padding: 1.4rem;
+  background: #fff8ef;
+  color: #073b4c;
+  box-shadow: 12px 12px 0 #073b4c;
+}
+
+.windowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 4px solid #073b4c;
+  padding-bottom: 0.75rem;
+}
+
+.windowTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.closeButton {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 4px solid #073b4c;
+  padding: 0;
+  background: #ef476f;
+  color: #fff8ef;
+  box-shadow: 4px 4px 0 #073b4c;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
+}
+
+.closeButton:hover {
+  background: #ffd166;
+  color: #073b4c;
+  box-shadow: 2px 2px 0 #073b4c;
+  transform: translate(2px, 2px);
+}
+
+.windowGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.windowChoice {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  border: 4px solid #073b4c;
+  padding: 0.65rem 0.35rem;
+  background: #ffd166;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
+}
+
+.windowChoice:hover {
+  background: #06d6a0;
+  box-shadow: 5px 5px 0 #073b4c;
+  transform: translate(-2px, -2px);
+}
+
+.windowChoiceIcon {
+  display: block;
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.windowChoiceName {
+  color: #073b4c;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.windowChoiceSelected {
+  background: #ef476f;
+  box-shadow: inset 0 0 0 4px #fff8ef;
+}
+
+.windowChoiceSelected .windowChoiceName {
+  color: #fff8ef;
+}
+
+@media (max-width: 430px) {
+  .preview {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .window {
+    padding: 1.1rem;
+  }
+
+  .windowGrid {
+    gap: 0.5rem;
+  }
+
+  .windowChoiceIcon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .windowChoiceName {
+    font-size: 0.56rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .closeButton,
+  .windowChoice {
+    transition: none;
+  }
+}

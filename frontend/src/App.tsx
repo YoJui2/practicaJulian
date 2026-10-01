@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { getQuestion, QuestionsApiError } from './api/questions'
 import type { Question } from './api/questions'
+import { AVATARS } from './components/Avatars'
+import { AvatarPicker } from './components/AvatarPicker'
 import { Wheel } from './components/Wheel'
 import { POINTS_PER_CORRECT_ANSWER, WHEEL_QUESTION_IDS } from './config'
 import { normalizeAnswer } from './game/answer'
@@ -15,6 +17,7 @@ type GamePhase =
 interface Player {
   name: string
   score: number
+  avatar: number
 }
 
 interface Feedback {
@@ -23,8 +26,8 @@ interface Feedback {
 }
 
 const INITIAL_PLAYERS: Record<PlayerId, Player> = {
-  playerOne: { name: 'Jugador 1', score: 0 },
-  playerTwo: { name: 'Jugador 2', score: 0 },
+  playerOne: { name: 'Jugador 1', score: 0, avatar: 0 },
+  playerTwo: { name: 'Jugador 2', score: 0, avatar: 3 },
 }
 
 function App() {
@@ -115,6 +118,13 @@ function App() {
     }))
   }
 
+  function handleAvatarChange(playerId: PlayerId, avatar: number) {
+    setPlayers((current) => ({
+      ...current,
+      [playerId]: { ...current[playerId], avatar },
+    }))
+  }
+
   function handleAnswerSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -192,6 +202,12 @@ function App() {
                   }
                 />
               </div>
+              <AvatarPicker
+                avatars={AVATARS}
+                onSelect={(avatar) => handleAvatarChange(playerId, avatar)}
+                playerName={player.name}
+                value={player.avatar}
+              />
               <strong className={styles.score}>
                 {player.score}
                 <span> puntos</span>

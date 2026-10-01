@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -134,6 +134,71 @@ describe('trivia game', () => {
     ).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(fetchMock.mock.calls[0][0]).toBe(fetchMock.mock.calls[1][0])
+  })
+
+  it('opens the avatar window and applies the chosen avatar', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Elegí el avatar de Jugador 2' }),
+    )
+
+    const window = screen.getByRole('dialog', {
+      name: 'Elegí el avatar de Jugador 2',
+    })
+    expect(within(window).getAllByRole('button', { name: /^Avatar / })).toHaveLength(8)
+    expect(
+      within(window).getByRole('button', { name: 'Avatar verde con gorra' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(
+      within(window).getByRole('button', { name: 'Avatar turquesa' }),
+    )
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Elegí el avatar de Jugador 2' }),
+    )
+
+    const reopened = screen.getByRole('dialog')
+    expect(
+      within(reopened).getByRole('button', { name: 'Avatar turquesa' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(reopened).getByRole('button', { name: 'Avatar verde con gorra' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('closes the avatar window without choosing', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Elegí el avatar de Jugador 1' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Elegí el avatar de Jugador 1' }),
+    )
+
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Avatar rojo' }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('keeps custom names, accepts a wrong answer and changes turns', async () => {
