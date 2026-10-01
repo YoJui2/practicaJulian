@@ -208,7 +208,7 @@ input:disabled {
 }
 
 .errorState button,
-.questionContent button {
+.feedback button {
   justify-self: center;
   border: 0;
   border-radius: 999px;
@@ -255,24 +255,27 @@ input:disabled {
 
 .options {
   display: grid;
-  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
 }
 
 .option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   justify-self: stretch;
-  border: 1px solid #b9a9d3;
-  border-radius: 0.9rem;
+  border: 0;
+  border-radius: 0;
   padding: 0.85rem 1rem;
   color: #201a38;
   background: #fff;
   font: inherit;
   font-weight: 700;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
 .option:hover:not(:disabled) {
-  border-color: #6d3ca6;
   background: #f4eefe;
 }
 
@@ -344,6 +347,10 @@ input:disabled {
 
   .score {
     font-size: 1.9rem;
+  }
+
+  .options {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -529,19 +536,23 @@ input {
   letter-spacing: 0;
 }
 
+.options {
+  border: 5px solid #171329;
+  box-shadow: 9px 9px 0 #171329;
+}
+
 .option {
-  min-height: 4.25rem;
-  border: 3px solid #171329;
-  border-radius: 1.15rem;
+  min-height: 4.5rem;
+  border: 0;
+  border-radius: 0;
   padding: 0.9rem 1.15rem;
   color: #171329;
   background: #fffdf7;
-  box-shadow: 4px 4px 0 #171329;
   font-size: 1rem;
   font-weight: 900;
   font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;
   letter-spacing: 0;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition: filter 160ms ease;
 }
 
 .option:nth-child(1) {
@@ -571,14 +582,20 @@ input {
 }
 
 .option:hover:not(:disabled) {
-  border-color: #171329;
+  color: #171329;
   background: #fffdf7;
-  box-shadow: 1px 1px 0 #171329;
-  transform: translate(3px, 3px) rotate(-1deg);
+  outline: 3px solid #171329;
+  outline-offset: -3px;
+}
+
+.option:focus-visible {
+  outline: 4px solid #ffdc4a;
+  outline-offset: -4px;
+  z-index: 1;
 }
 
 .errorState button,
-.questionContent button {
+.feedback button {
   border: 3px solid #171329;
   color: #fffdf7;
   background: #5b3cc4;
@@ -586,7 +603,7 @@ input {
 }
 
 .errorState button:hover,
-.questionContent button:hover {
+.feedback button:hover {
   background: #e94b4b;
   transform: translate(2px, 2px);
 }
