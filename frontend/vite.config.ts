@@ -8,6 +8,9 @@ export default defineConfig({
     host: 'localhost',
     port: 5173,
     strictPort: true,
+    fs: {
+      allow: ['..'],
+    },
   },
   test: {
     environment: 'jsdom',

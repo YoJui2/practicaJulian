@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import frontDecoration from '../../../app/icon/ChatGPT Image 30 sept 2026, 22_32_09.png'
 import styles from './Wheel.module.css'
 
 interface WheelProps {
@@ -45,46 +46,55 @@ export function Wheel({
       <h2 id="wheel-title">Ruleta</h2>
       <p>El sector marcado determinará la pregunta.</p>
 
-      <div className={styles.wheelStage}>
-        <div className={styles.pointer} aria-hidden="true" />
-        <div
-          className={`${styles.wheel} ${loading ? styles.loading : ''}`}
-          data-testid="wheel-disc"
-          role="img"
-          aria-label={`Ruleta clásica con ${questionIds.length} sectores`}
-          style={
-            {
-              transform: `rotate(${rotation}deg)`,
-              '--wheel-rotation': `${rotation}deg`,
-              background: `conic-gradient(${createGradient(questionIds.length)})`,
-            } as CSSProperties
-          }
-        >
-          <span className={styles.hub} aria-hidden="true" />
-        </div>
-        <div
-          className={`${styles.labels} ${loading ? styles.loading : ''}`}
-          aria-hidden="true"
-          style={
-            {
-              transform: `rotate(${rotation}deg)`,
-              '--wheel-rotation': `${rotation}deg`,
-            } as CSSProperties
-          }
-        >
-          {questionIds.map((questionId, index) => {
-            const angle = index * segmentAngle + segmentAngle / 2
+      <div className={styles.wheelAssembly}>
+        <div className={styles.wheelStage}>
+          <div className={styles.pointer} aria-hidden="true" />
+          <div
+            className={`${styles.wheel} ${loading ? styles.loading : ''}`}
+            data-testid="wheel-disc"
+            role="img"
+            aria-label={`Ruleta clásica con ${questionIds.length} sectores`}
+            style={
+              {
+                transform: `rotate(${rotation}deg)`,
+                '--wheel-rotation': `${rotation}deg`,
+                background: `conic-gradient(${createGradient(questionIds.length)})`,
+              } as CSSProperties
+            }
+          >
+            <span className={styles.hub} aria-hidden="true" />
+          </div>
+          <div
+            className={`${styles.labels} ${loading ? styles.loading : ''}`}
+            aria-hidden="true"
+            style={
+              {
+                transform: `rotate(${rotation}deg)`,
+                '--wheel-rotation': `${rotation}deg`,
+              } as CSSProperties
+            }
+          >
+            {questionIds.map((questionId, index) => {
+              const angle = index * segmentAngle + segmentAngle / 2
 
-            return (
-              <span
-                className={styles.segmentLabel}
-                key={questionId}
-                style={{ '--label-angle': `${angle}deg` } as CSSProperties}
-              >
-                {CATEGORY_EMOJIS[index % CATEGORY_EMOJIS.length]}
-              </span>
-            )
-          })}
+              return (
+                <span
+                  className={styles.segmentLabel}
+                  key={questionId}
+                  style={{ '--label-angle': `${angle}deg` } as CSSProperties}
+                >
+                  {CATEGORY_EMOJIS[index % CATEGORY_EMOJIS.length]}
+                </span>
+              )
+            })}
+          </div>
+
+          <img
+            src={frontDecoration}
+            alt=""
+            aria-hidden="true"
+            className={styles.frontDecoration}
+          />
         </div>
       </div>
 

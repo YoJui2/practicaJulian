@@ -43,6 +43,9 @@ describe('trivia game', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<App />)
+    expect(
+      screen.queryByRole('img', { name: 'Personaje del juego' }),
+    ).not.toBeInTheDocument()
     await spinWheel(user)
 
     expect(
