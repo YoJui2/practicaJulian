@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import frontDecoration from '../../../app/icon/ChatGPT Image 30 sept 2026, 22_32_09.png'
+import frontDecoration from '../../../app/icon/cocodra.png'
 import styles from './Wheel.module.css'
 
 interface WheelProps {
