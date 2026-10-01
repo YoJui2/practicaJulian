@@ -1,10 +1,7 @@
 :root {
-  font-family:
-    'Arial Rounded MT Bold',
-    'Trebuchet MS',
-    sans-serif;
-  color: #171329;
-  background: #5b3cc4;
+  font-family: 'Arial Black', 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;
+  color: #073b4c;
+  background: #ffe8d6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -13,15 +10,19 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-color: #073b4c #ffe8d6;
 }
 
 html {
   min-width: 320px;
   min-height: 100%;
-  background:
-    radial-gradient(circle at 9% 6%, #ffdc4a 0 4rem, transparent 4.1rem),
-    radial-gradient(circle at 92% 13%, #ff6f91 0 5rem, transparent 5.1rem),
-    linear-gradient(145deg, #5b3cc4 0%, #1c1641 54%, #11102b 100%);
+  background-color: #ffe8d6;
+  background-image:
+    radial-gradient(40rem 40rem at 6% 2%, rgb(239 71 111 / 45%), transparent 62%),
+    radial-gradient(36rem 36rem at 97% 16%, rgb(6 214 160 / 45%), transparent 62%),
+    radial-gradient(44rem 44rem at 50% 106%, rgb(17 138 178 / 42%), transparent 64%),
+    linear-gradient(180deg, #fff3e2 0%, #ffe8d6 60%, #ffd9bd 100%);
+  background-attachment: fixed;
 }
 
 body {
@@ -38,6 +39,11 @@ input {
 
 button:focus-visible,
 input:focus-visible {
-  outline: 0.2rem solid #f1c453;
-  outline-offset: 0.25rem;
+  outline: 3px solid #ef476f;
+  outline-offset: 3px;
+}
+
+::selection {
+  color: #073b4c;
+  background: #ffd166;
 }
