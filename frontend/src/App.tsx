@@ -8,26 +8,46 @@ import { Wheel } from './components/Wheel'
 import { POINTS_PER_CORRECT_ANSWER, WHEEL_QUESTION_IDS } from './config'
 import { normalizeAnswer } from './game/answer'
 import { randomIndex } from './game/random'
+import { optionsToHide, STARTING_WILDCARDS, WILDCARDS } from './game/wildcards'
+import type { WildcardId } from './game/wildcards'
 import styles from './App.module.css'
 
 type PlayerId = 'playerOne' | 'playerTwo'
 type GamePhase =
-  'ready' | 'loading' | 'answering' | 'feedback' | 'error'
+  | 'ready'
+  | 'loading'
+  | 'answering'
+  | 'feedback'
+  | 'error'
 
 interface Player {
   name: string
   score: number
   avatar: number
+  wildcards: WildcardId[]
 }
 
 interface Feedback {
   correct: boolean
   submittedAnswer: string
+  points: number
 }
 
+const BONUS_MULTIPLIER = 2
+
 const INITIAL_PLAYERS: Record<PlayerId, Player> = {
-  playerOne: { name: 'Jugador 1', score: 0, avatar: 0 },
-  playerTwo: { name: 'Jugador 2', score: 0, avatar: 3 },
+  playerOne: {
+    name: 'Jugador 1',
+    score: 0,
+    avatar: 0,
+    wildcards: [...STARTING_WILDCARDS],
+  },
+  playerTwo: {
+    name: 'Jugador 2',
+    score: 0,
+    avatar: 3,
+    wildcards: [...STARTING_WILDCARDS],
+  },
 }
 
 function App() {
@@ -42,19 +62,43 @@ function App() {
   const [question, setQuestion] = useState<Question | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
+  const [hiddenOptions, setHiddenOptions] = useState<string[]>([])
+  const [eliminatedOptions, setEliminatedOptions] = useState<string[]>([])
+  const [attemptsLeft, setAttemptsLeft] = useState(1)
+  const [retryActive, setRetryActive] = useState(false)
+  const [bonusPoints, setBonusPoints] = useState(false)
   const activePlayer = players[activePlayerId]
   const segmentAngle = 360 / WHEEL_QUESTION_IDS.length
   const gameLocked = phase !== 'ready'
+  const stake =
+    POINTS_PER_CORRECT_ANSWER * (bonusPoints ? BONUS_MULTIPLIER : 1)
+
+  const visibleOptions = question
+    ? question.options.filter(
+        (option) =>
+          !hiddenOptions.includes(option) &&
+          !eliminatedOptions.includes(option),
+      )
+    : []
 
   const statusMessage = useMemo(() => {
     switch (phase) {
       case 'loading':
         return `Buscando la pregunta ${selectedQuestionId} para ${activePlayer.name}.`
-      case 'answering':
-        return `Turno de ${activePlayer.name}. Elegí una opción.`
+      case 'answering': {
+        const base = retryActive
+          ? attemptsLeft > 1
+            ? `Turno de ${activePlayer.name}. Tenés dos chances: elegí una opción.`
+            : `Turno de ${activePlayer.name}. Te queda un intento más.`
+          : `Turno de ${activePlayer.name}. Elegí una opción.`
+
+        return bonusPoints
+          ? `${base} La respuesta correcta vale ${stake} puntos.`
+          : base
+      }
       case 'feedback':
         return feedback?.correct
-          ? `Respuesta correcta. ${activePlayer.name} ganó ${POINTS_PER_CORRECT_ANSWER} puntos.`
+          ? `Respuesta correcta. ${activePlayer.name} ganó ${feedback.points} puntos.`
           : `Respuesta incorrecta. La respuesta correcta era ${question?.answer}.`
       case 'error':
         return errorMessage
@@ -63,12 +107,27 @@ function App() {
     }
   }, [
     activePlayer.name,
+    attemptsLeft,
+    bonusPoints,
     errorMessage,
-    feedback?.correct,
+    feedback,
     phase,
     question?.answer,
+    retryActive,
     selectedQuestionId,
+    stake,
   ])
+
+  function clearRoundState() {
+    setQuestion(null)
+    setFeedback(null)
+    setErrorMessage('')
+    setHiddenOptions([])
+    setEliminatedOptions([])
+    setAttemptsLeft(1)
+    setRetryActive(false)
+    setBonusPoints(false)
+  }
 
   async function loadQuestion(questionId: number) {
     setPhase('loading')
@@ -101,9 +160,7 @@ function App() {
 
     setSelectedQuestionId(WHEEL_QUESTION_IDS[nextIndex])
     setRotation(currentRotation + rotationDelta + 6 * 360)
-    setQuestion(null)
-    setFeedback(null)
-    setErrorMessage('')
+    clearRoundState()
     void loadQuestion(WHEEL_QUESTION_IDS[nextIndex])
   }
 
@@ -125,6 +182,40 @@ function App() {
     }))
   }
 
+  function awardPoints(playerId: PlayerId, points: number) {
+    setPlayers((current) => ({
+      ...current,
+      [playerId]: {
+        ...current[playerId],
+        score: current[playerId].score + points,
+      },
+    }))
+  }
+
+  function spendWildcard(playerId: PlayerId, wildcardId: WildcardId) {
+    setPlayers((current) => ({
+      ...current,
+      [playerId]: {
+        ...current[playerId],
+        wildcards: current[playerId].wildcards.filter(
+          (owned) => owned !== wildcardId,
+        ),
+      },
+    }))
+  }
+
+  function finishAnswer(submittedAnswer: string, correct: boolean) {
+    const points = correct ? stake : 0
+
+    if (correct) {
+      awardPoints(activePlayerId, points)
+      setBonusPoints(false)
+    }
+
+    setFeedback({ correct, submittedAnswer, points })
+    setPhase('feedback')
+  }
+
   function handleAnswerSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -137,24 +228,50 @@ function App() {
       submitter.submitter instanceof HTMLButtonElement
         ? submitter.submitter.value
         : ''
+
     if (!chosen.trim()) {
       return
     }
 
-    const correct = normalizeAnswer(chosen) === normalizeAnswer(question.answer)
+    const answer = chosen.trim()
+    const correct =
+      normalizeAnswer(answer) === normalizeAnswer(question.answer)
 
-    if (correct) {
-      setPlayers((current) => ({
-        ...current,
-        [activePlayerId]: {
-          ...current[activePlayerId],
-          score: current[activePlayerId].score + POINTS_PER_CORRECT_ANSWER,
-        },
-      }))
+    if (!correct && attemptsLeft > 1) {
+      setEliminatedOptions((current) => [...current, answer])
+      setAttemptsLeft((current) => current - 1)
+      return
     }
 
-    setFeedback({ correct, submittedAnswer: chosen.trim() })
-    setPhase('feedback')
+    finishAnswer(answer, correct)
+  }
+
+  function handleUseWildcard(wildcardId: WildcardId) {
+    if (phase !== 'answering' || !question) {
+      return
+    }
+
+    if (!activePlayer.wildcards.includes(wildcardId)) {
+      return
+    }
+
+    spendWildcard(activePlayerId, wildcardId)
+
+    switch (wildcardId) {
+      case 'podar':
+        setHiddenOptions(optionsToHide(question.options, question.answer))
+        break
+      case 'segundo':
+        setRetryActive(true)
+        setAttemptsLeft(2)
+        break
+      case 'doblar':
+        setBonusPoints(true)
+        break
+      case 'chivazo':
+        finishAnswer(question.answer, true)
+        break
+    }
   }
 
   function handleNextRound() {
@@ -163,9 +280,7 @@ function App() {
     )
     setRound((current) => current + 1)
     setSelectedQuestionId(null)
-    setQuestion(null)
-    setFeedback(null)
-    setErrorMessage('')
+    clearRoundState()
     setPhase('ready')
   }
 
@@ -275,21 +390,56 @@ function App() {
               <h3>{question.question}</h3>
 
               {phase === 'answering' ? (
-                <form onSubmit={handleAnswerSubmit}>
-                  <div className={styles.options} role="group" aria-label="Opciones de respuesta">
-                    {question.options.map((option) => (
-                      <button
-                        className={styles.option}
-                        key={option}
-                        type="submit"
-                        name="option"
-                        value={option}
-                      >
-                        {option}
-                      </button>
-                    ))}
+                <>
+                  <div className={styles.wildcards}>
+                    <p className={styles.wildcardsTitle}>
+                      Comodines de {activePlayer.name}
+                    </p>
+                    <div className={styles.wildcardsRow}>
+                      {WILDCARDS.map((wildcard) => {
+                        const owned =
+                          activePlayer.wildcards.includes(wildcard.id)
+
+                        return (
+                          <button
+                            aria-label={`${wildcard.name}. ${wildcard.description}`}
+                            className={`${styles.wildcard} ${
+                              owned ? '' : styles.wildcardUnavailable
+                            }`}
+                            disabled={!owned}
+                            key={wildcard.id}
+                            onClick={() => handleUseWildcard(wildcard.id)}
+                            type="button"
+                          >
+                            <strong>{wildcard.name}</strong>
+                            <span>{wildcard.description}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </form>
+
+                  <form onSubmit={handleAnswerSubmit}>
+                    <div
+                      aria-label="Opciones de respuesta"
+                      className={styles.options}
+                      role="group"
+                    >
+                      {visibleOptions.map((option) => (
+                        <button
+                          className={styles.option}
+                          data-tone={question.options.indexOf(option) + 1}
+                          key={option}
+                          name="option"
+                          type="submit"
+                          value={option}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </form>
+                </>
               ) : (
                 <div
                   className={`${styles.feedback} ${
@@ -305,8 +455,7 @@ function App() {
                   </p>
                   {feedback?.correct && (
                     <p>
-                      Sumaste{' '}
-                      <strong>{POINTS_PER_CORRECT_ANSWER} puntos</strong>.
+                      Sumaste <strong>{feedback.points} puntos</strong>.
                     </p>
                   )}
                   <button type="button" onClick={handleNextRound}>

@@ -235,4 +235,203 @@ describe('trivia game', () => {
       screen.getByText('Turno de Beto. Podés girar la ruleta.'),
     ).toBeInTheDocument()
   })
+
+  it('podar deja solo dos opciones y siempre mantiene la correcta', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    const options = screen.getByRole('group', { name: 'Opciones de respuesta' })
+    expect(within(options).getAllByRole('button')).toHaveLength(4)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Podar. Elimina 2 respuestas falsas.' }),
+    )
+
+    const pruned = within(
+      screen.getByRole('group', { name: 'Opciones de respuesta' }),
+    )
+
+    expect(pruned.getAllByRole('button')).toHaveLength(2)
+    expect(
+      pruned.getByRole('button', { name: 'Buenos Aires' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Podar. Elimina 2 respuestas falsas.' }),
+    ).toBeDisabled()
+  })
+
+  it('chivazo resuelve la pregunta y suma los puntos', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
+    )
+
+    expect(await screen.findByText('¡Correcto!')).toBeInTheDocument()
+    expect(screen.getByText('10')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('group', { name: 'Opciones de respuesta' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('segundo intento deja responder otra vez si fallás', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Segundo intento. Respondés otra vez si fallás.',
+      }),
+    )
+
+    expect(
+      screen.getByText(
+        'Turno de Jugador 1. Tenés dos chances: elegí una opción.',
+      ),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Córdoba' }))
+
+    expect(
+      screen.getByText('Turno de Jugador 1. Te queda un intento más.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Córdoba' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('group', { name: 'Opciones de respuesta' }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Rosario' }))
+
+    expect(await screen.findByText('No es correcto')).toBeInTheDocument()
+  })
+
+  it('segundo intento suma los puntos si acertás al retry', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Segundo intento. Respondés otra vez si fallás.',
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Córdoba' }))
+    await user.click(screen.getByRole('button', { name: 'Buenos Aires' }))
+
+    expect(await screen.findByText('¡Correcto!')).toBeInTheDocument()
+    expect(screen.getByText('10')).toBeInTheDocument()
+  })
+
+  it('puntos x2 duplica el premio de la respuesta correcta', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Puntos x2. La respuesta correcta vale el doble.',
+      }),
+    )
+
+    expect(
+      screen.getByText(
+        'Turno de Jugador 1. Elegí una opción. La respuesta correcta vale 20 puntos.',
+      ),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Buenos Aires' }))
+
+    expect(await screen.findByText('¡Correcto!')).toBeInTheDocument()
+    expect(screen.getByText('20')).toBeInTheDocument()
+    expect(screen.getByText(/Sumaste 20 puntos/)).toBeInTheDocument()
+  })
+
+  it('los comodines no se reactivan para el mismo jugador', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
+    )
+    await screen.findByText('¡Correcto!')
+    await user.click(screen.getByRole('button', { name: 'Siguiente jugador' }))
+
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
+    ).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Buenos Aires' }))
+    await screen.findByText('¡Correcto!')
+    await user.click(screen.getByRole('button', { name: 'Siguiente jugador' }))
+
+    expect(
+      screen.getByText('Turno de Jugador 1. Podés girar la ruleta.'),
+    ).toBeInTheDocument()
+
+    await spinWheel(user)
+    await screen.findByRole('heading', {
+      name: '¿Cuál es la capital de Argentina?',
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Podar. Elimina 2 respuestas falsas.' }),
+    ).toBeEnabled()
+  })
 })

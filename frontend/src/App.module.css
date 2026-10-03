@@ -408,22 +408,22 @@ input:disabled {
   transition: box-shadow 160ms ease;
 }
 
-.option:nth-child(1) {
+.option[data-tone='1'] {
   color: #fff8ef;
   background: #d93662;
 }
 
-.option:nth-child(2) {
+.option[data-tone='2'] {
   color: #fff8ef;
   background: #1769aa;
 }
 
-.option:nth-child(3) {
+.option[data-tone='3'] {
   color: #073b4c;
   background: #ffdc4a;
 }
 
-.option:nth-child(4) {
+.option[data-tone='4'] {
   color: #fff8ef;
   background: #168653;
 }
@@ -439,9 +439,75 @@ input:disabled {
   z-index: 2;
 }
 
-.questionContent button:disabled {
+.wildcards {
+  margin-top: 1.5rem;
+  border-top: 4px dashed #073b4c;
+  padding-top: 1rem;
+}
+
+.wildcardsTitle {
+  margin: 0 0 0.6rem;
+  color: #073b4c;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.wildcardsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.wildcard {
+  display: grid;
+  gap: 0.25rem;
+  border: 3px solid #073b4c;
+  padding: 0.55rem 0.5rem;
+  background: #06d6a0;
+  color: #073b4c;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
+}
+
+.wildcard strong {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.wildcard span {
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.wildcard:hover:not(:disabled) {
+  background: #ffd166;
+  box-shadow: 4px 4px 0 #073b4c;
+  transform: translate(-2px, -2px);
+}
+
+.wildcard:focus-visible {
+  outline: 3px solid #ef476f;
+  outline-offset: 2px;
+}
+
+.wildcard:disabled,
+.wildcardUnavailable {
+  border-color: #8aa0ab;
+  background: #dfe7ea;
+  color: #6b8391;
+  box-shadow: none;
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 1;
+  transform: none;
 }
 
 .feedback {
@@ -520,6 +586,10 @@ input:disabled {
   .options {
     grid-template-columns: 1fr;
   }
+
+  .wildcardsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -530,6 +600,7 @@ input:disabled {
   }
 
   .option,
+  .wildcard,
   .errorState button,
   .feedback button,
   input {
