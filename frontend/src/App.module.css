@@ -48,9 +48,9 @@
   position: absolute;
   bottom: -2.75rem;
   left: 50%;
-  width: 100vw;
+  max-width: 100%;
   border-block: 4px solid #073b4c;
-  padding: 0.5rem 0;
+  padding: 0.5rem 1.1rem;
   background: #ffd166;
   color: #073b4c;
   font-size: 0.85rem;
@@ -58,7 +58,7 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   white-space: nowrap;
-  content: 'Girá la ruleta ✦ Respondé ✦ Sumá puntos ✦ Girá la ruleta ✦ Respondé ✦ Sumá puntos';
+  content: 'Girá la ruleta ✦ Respondé ✦ Sumá puntos';
   transform: translateX(-50%) rotate(-1.5deg);
 }
 
@@ -83,7 +83,7 @@
 
 .hero h1 {
   color: #073b4c;
-  font-size: clamp(3.2rem, 11vw, 8rem);
+  font-size: clamp(2.2rem, 11vw, 8rem);
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 0.84;
@@ -140,6 +140,8 @@
 
 .turnLabel {
   justify-self: start;
+  max-width: 100%;
+  overflow-wrap: break-word;
   padding: 0.2rem 0.6rem;
   background: #073b4c;
   color: #ffd166;
@@ -594,15 +596,66 @@ input:disabled {
   }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 620px) {
+  .page {
+    padding-top: 1.5rem;
+  }
+
+  .players,
+  .gameLayout {
+    gap: 1rem;
+  }
+
   .playerCard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-content: normal;
+    row-gap: 0.85rem;
     align-items: center;
+    padding: 0.9rem 1rem;
+    box-shadow: 6px 6px 0 #073b4c;
+  }
+
+  .playerCard > strong {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .score {
-    font-size: 2.4rem;
+    font-size: 2.2rem;
   }
 
+  .score span {
+    display: inline;
+    margin: 0 0 0 0.4rem;
+  }
+
+  .turnLabel {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  .questionPanel {
+    min-height: 22rem;
+    box-shadow: 6px 6px 0 #073b4c;
+  }
+
+  .emptyState,
+  .loadingState,
+  .errorState {
+    min-height: 19rem;
+  }
+
+  .hero::after {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    content: 'Girá ✦ Respondé ✦ Sumá';
+  }
+}
+
+@media (max-width: 430px) {
   .options {
     grid-template-columns: 1fr;
   }

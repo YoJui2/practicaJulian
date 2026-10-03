@@ -198,6 +198,7 @@
 
 @media (max-width: 560px) {
   .frontDecoration {
+    right: -1.25rem;
     width: clamp(10rem, 60%, 15rem);
   }
 }
