@@ -35,6 +35,38 @@ async function spinWheel(user: ReturnType<typeof userEvent.setup>) {
   })
 }
 
+const WILDCARD_NAMES = {
+  podar: 'Podar',
+  chivazo: 'Chivazo',
+  segundo: 'Segundo intento',
+  doblar: 'Puntos x2',
+} as const
+
+type WildcardKey = keyof typeof WILDCARD_NAMES
+
+function wildcardButton(key: WildcardKey) {
+  return screen.getByRole('button', {
+    name: new RegExp(`^${WILDCARD_NAMES[key]}\\.`),
+  })
+}
+
+function wildcardAvailability(key: WildcardKey) {
+  return wildcardButton(key).getAttribute('aria-label') ?? ''
+}
+
+async function startRound(user: ReturnType<typeof userEvent.setup>) {
+  await spinWheel(user)
+  await screen.findByRole('heading', {
+    name: '¿Cuál es la capital de Argentina?',
+  })
+}
+
+async function answerCorrectly(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Buenos Aires' }))
+  await screen.findByText('¡Correcto!')
+  await user.click(screen.getByRole('button', { name: 'Siguiente jugador' }))
+}
+
 describe('trivia game', () => {
   it('loads a question and awards ten points for a correct answer', async () => {
     const user = userEvent.setup()
@@ -251,9 +283,7 @@ describe('trivia game', () => {
     const options = screen.getByRole('group', { name: 'Opciones de respuesta' })
     expect(within(options).getAllByRole('button')).toHaveLength(4)
 
-    await user.click(
-      screen.getByRole('button', { name: 'Podar. Elimina 2 respuestas falsas.' }),
-    )
+    await user.click(wildcardButton('podar'))
 
     const pruned = within(
       screen.getByRole('group', { name: 'Opciones de respuesta' }),
@@ -263,9 +293,9 @@ describe('trivia game', () => {
     expect(
       pruned.getByRole('button', { name: 'Buenos Aires' }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Podar. Elimina 2 respuestas falsas.' }),
-    ).toBeDisabled()
+    expect(wildcardButton('podar')).toBeDisabled()
+    expect(wildcardButton('podar')).toHaveTextContent('0/1')
+    expect(wildcardAvailability('podar')).toContain('Sin usos disponibles.')
   })
 
   it('chivazo resuelve la pregunta y suma los puntos', async () => {
@@ -280,9 +310,7 @@ describe('trivia game', () => {
       name: '¿Cuál es la capital de Argentina?',
     })
 
-    await user.click(
-      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
-    )
+    await user.click(wildcardButton('chivazo'))
 
     expect(await screen.findByText('¡Correcto!')).toBeInTheDocument()
     expect(screen.getByText('10')).toBeInTheDocument()
@@ -303,11 +331,7 @@ describe('trivia game', () => {
       name: '¿Cuál es la capital de Argentina?',
     })
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Segundo intento. Respondés otra vez si fallás.',
-      }),
-    )
+    await user.click(wildcardButton('segundo'))
 
     expect(
       screen.getByText(
@@ -344,11 +368,7 @@ describe('trivia game', () => {
       name: '¿Cuál es la capital de Argentina?',
     })
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Segundo intento. Respondés otra vez si fallás.',
-      }),
-    )
+    await user.click(wildcardButton('segundo'))
     await user.click(screen.getByRole('button', { name: 'Córdoba' }))
     await user.click(screen.getByRole('button', { name: 'Buenos Aires' }))
 
@@ -368,11 +388,7 @@ describe('trivia game', () => {
       name: '¿Cuál es la capital de Argentina?',
     })
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Puntos x2. La respuesta correcta vale el doble.',
-      }),
-    )
+    await user.click(wildcardButton('doblar'))
 
     expect(
       screen.getByText(
@@ -387,51 +403,117 @@ describe('trivia game', () => {
     expect(screen.getByText(/Sumaste 20 puntos/)).toBeInTheDocument()
   })
 
-  it('los comodines no se reactivan para el mismo jugador', async () => {
+  it('no deja usar dos veces el mismo comodin en la misma ronda', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn()
     mockQuestionResponse(fetchMock)
     vi.stubGlobal('fetch', fetchMock)
 
     render(<App />)
-    await spinWheel(user)
-    await screen.findByRole('heading', {
-      name: '¿Cuál es la capital de Argentina?',
-    })
+    await startRound(user)
 
-    await user.click(
-      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
+    expect(wildcardAvailability('doblar')).toContain(
+      'Usos disponibles: 3 de 3.',
     )
-    await screen.findByText('¡Correcto!')
-    await user.click(screen.getByRole('button', { name: 'Siguiente jugador' }))
 
-    await spinWheel(user)
-    await screen.findByRole('heading', {
-      name: '¿Cuál es la capital de Argentina?',
-    })
+    await user.click(wildcardButton('doblar'))
+
+    expect(wildcardButton('doblar')).toBeDisabled()
+    expect(wildcardButton('doblar')).toHaveTextContent('2/3')
+    expect(wildcardAvailability('doblar')).toContain(
+      'Ya lo usaste en esta ronda.',
+    )
+
+    await user.click(wildcardButton('doblar'))
 
     expect(
-      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
-    ).toBeEnabled()
+      screen.getByText(
+        'Turno de Jugador 1. Elegí una opción. La respuesta correcta vale 20 puntos.',
+      ),
+    ).toBeInTheDocument()
+  })
 
-    await user.click(screen.getByRole('button', { name: 'Buenos Aires' }))
+  it('permite usar podar y puntos x2 en la misma ronda', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await startRound(user)
+
+    await user.click(wildcardButton('doblar'))
+    await user.click(wildcardButton('podar'))
+
+    expect(wildcardButton('doblar')).toBeDisabled()
+    expect(wildcardButton('podar')).toBeDisabled()
+    expect(
+      within(
+        screen.getByRole('group', { name: 'Opciones de respuesta' }),
+      ).getAllByRole('button'),
+    ).toHaveLength(2)
+  })
+
+  it('puntos x2 vuelve a estar disponible en la ronda siguiente', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await startRound(user)
+
+    await user.click(wildcardButton('doblar'))
+    await answerCorrectly(user)
+
+    await startRound(user)
+    expect(
+      screen.getByText('Turno de Jugador 2. Podés girar la ruleta.'),
+    ).toBeInTheDocument()
+    expect(wildcardAvailability('doblar')).toContain(
+      'Usos disponibles: 3 de 3.',
+    )
+    await answerCorrectly(user)
+
+    await startRound(user)
+    expect(
+      screen.getByText('Turno de Jugador 1. Podés girar la ruleta.'),
+    ).toBeInTheDocument()
+    expect(wildcardButton('doblar')).toBeEnabled()
+    expect(wildcardButton('doblar')).toHaveTextContent('2/3')
+    expect(wildcardAvailability('doblar')).toContain(
+      'Usos disponibles: 2 de 3.',
+    )
+  })
+
+  it('los comodines de un uso no vuelven para el mismo jugador', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await startRound(user)
+
+    await user.click(wildcardButton('chivazo'))
     await screen.findByText('¡Correcto!')
     await user.click(screen.getByRole('button', { name: 'Siguiente jugador' }))
+
+    await startRound(user)
+    expect(wildcardButton('chivazo')).toBeEnabled()
+    expect(wildcardButton('chivazo')).toHaveTextContent('1/1')
+
+    await answerCorrectly(user)
 
     expect(
       screen.getByText('Turno de Jugador 1. Podés girar la ruleta.'),
     ).toBeInTheDocument()
 
-    await spinWheel(user)
-    await screen.findByRole('heading', {
-      name: '¿Cuál es la capital de Argentina?',
-    })
+    await startRound(user)
 
-    expect(
-      screen.getByRole('button', { name: 'Chivazo. Resuelve la pregunta por vos.' }),
-    ).toBeDisabled()
-    expect(
-      screen.getByRole('button', { name: 'Podar. Elimina 2 respuestas falsas.' }),
-    ).toBeEnabled()
+    expect(wildcardButton('chivazo')).toBeDisabled()
+    expect(wildcardButton('chivazo')).toHaveTextContent('0/1')
+    expect(wildcardAvailability('chivazo')).toContain('Sin usos disponibles.')
+    expect(wildcardButton('podar')).toBeEnabled()
   })
 })

@@ -8,8 +8,16 @@ import { Wheel } from './components/Wheel'
 import { POINTS_PER_CORRECT_ANSWER, WHEEL_QUESTION_IDS } from './config'
 import { normalizeAnswer } from './game/answer'
 import { randomIndex } from './game/random'
-import { optionsToHide, STARTING_WILDCARDS, WILDCARDS } from './game/wildcards'
-import type { WildcardId } from './game/wildcards'
+import {
+  canUseWildcard,
+  createWildcardUses,
+  maxUsesOf,
+  optionsToHide,
+  spendWildcardUse,
+  usesLeft,
+  WILDCARDS,
+} from './game/wildcards'
+import type { WildcardId, WildcardUses } from './game/wildcards'
 import styles from './App.module.css'
 
 type PlayerId = 'playerOne' | 'playerTwo'
@@ -24,7 +32,7 @@ interface Player {
   name: string
   score: number
   avatar: number
-  wildcards: WildcardId[]
+  wildcardUses: WildcardUses
 }
 
 interface Feedback {
@@ -40,13 +48,13 @@ const INITIAL_PLAYERS: Record<PlayerId, Player> = {
     name: 'Jugador 1',
     score: 0,
     avatar: 0,
-    wildcards: [...STARTING_WILDCARDS],
+    wildcardUses: createWildcardUses(),
   },
   playerTwo: {
     name: 'Jugador 2',
     score: 0,
     avatar: 3,
-    wildcards: [...STARTING_WILDCARDS],
+    wildcardUses: createWildcardUses(),
   },
 }
 
@@ -67,6 +75,7 @@ function App() {
   const [attemptsLeft, setAttemptsLeft] = useState(1)
   const [retryActive, setRetryActive] = useState(false)
   const [bonusPoints, setBonusPoints] = useState(false)
+  const [usedWildcards, setUsedWildcards] = useState<WildcardId[]>([])
   const activePlayer = players[activePlayerId]
   const segmentAngle = 360 / WHEEL_QUESTION_IDS.length
   const gameLocked = phase !== 'ready'
@@ -127,6 +136,7 @@ function App() {
     setAttemptsLeft(1)
     setRetryActive(false)
     setBonusPoints(false)
+    setUsedWildcards([])
   }
 
   async function loadQuestion(questionId: number) {
@@ -197,8 +207,9 @@ function App() {
       ...current,
       [playerId]: {
         ...current[playerId],
-        wildcards: current[playerId].wildcards.filter(
-          (owned) => owned !== wildcardId,
+        wildcardUses: spendWildcardUse(
+          current[playerId].wildcardUses,
+          wildcardId,
         ),
       },
     }))
@@ -251,11 +262,14 @@ function App() {
       return
     }
 
-    if (!activePlayer.wildcards.includes(wildcardId)) {
+    if (
+      !canUseWildcard(activePlayer.wildcardUses, usedWildcards, wildcardId)
+    ) {
       return
     }
 
     spendWildcard(activePlayerId, wildcardId)
+    setUsedWildcards((current) => [...current, wildcardId])
 
     switch (wildcardId) {
       case 'podar':
@@ -397,22 +411,41 @@ function App() {
                     </p>
                     <div className={styles.wildcardsRow}>
                       {WILDCARDS.map((wildcard) => {
-                        const owned =
-                          activePlayer.wildcards.includes(wildcard.id)
+                        const remaining = usesLeft(
+                          activePlayer.wildcardUses,
+                          wildcard.id,
+                        )
+                        const total = maxUsesOf(wildcard.id)
+                        const spentThisRound =
+                          usedWildcards.includes(wildcard.id)
+                        const usable = !spentThisRound && remaining > 0
+                        const availability =
+                          remaining === 0
+                            ? 'Sin usos disponibles.'
+                            : spentThisRound
+                              ? 'Ya lo usaste en esta ronda.'
+                              : `Usos disponibles: ${remaining} de ${total}.`
 
                         return (
                           <button
-                            aria-label={`${wildcard.name}. ${wildcard.description}`}
+                            aria-label={`${wildcard.name}. ${wildcard.description} ${availability}`}
                             className={`${styles.wildcard} ${
-                              owned ? '' : styles.wildcardUnavailable
+                              usable
+                                ? ''
+                                : spentThisRound
+                                  ? styles.wildcardSpent
+                                  : styles.wildcardUnavailable
                             }`}
-                            disabled={!owned}
+                            disabled={!usable}
                             key={wildcard.id}
                             onClick={() => handleUseWildcard(wildcard.id)}
                             type="button"
                           >
                             <strong>{wildcard.name}</strong>
                             <span>{wildcard.description}</span>
+                            <span className={styles.wildcardUses}>
+                              {remaining}/{total}
+                            </span>
                           </button>
                         )
                       })}
