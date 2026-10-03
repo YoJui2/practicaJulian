@@ -5,9 +5,12 @@ import type { Question } from './api/questions'
 import { AVATARS } from './components/Avatars'
 import { AvatarPicker } from './components/AvatarPicker'
 import { Wheel } from './components/Wheel'
-import { POINTS_PER_CORRECT_ANSWER, WHEEL_QUESTION_IDS } from './config'
+import {
+  POINTS_PER_CORRECT_ANSWER,
+  WHEEL_CATEGORIES,
+} from './config'
 import { normalizeAnswer } from './game/answer'
-import { randomIndex } from './game/random'
+import { forwardDelta, landingRotation, planSpin } from './game/wheel'
 import {
   canUseWildcard,
   createWildcardUses,
@@ -77,7 +80,6 @@ function App() {
   const [bonusPoints, setBonusPoints] = useState(false)
   const [usedWildcards, setUsedWildcards] = useState<WildcardId[]>([])
   const activePlayer = players[activePlayerId]
-  const segmentAngle = 360 / WHEEL_QUESTION_IDS.length
   const gameLocked = phase !== 'ready'
   const stake =
     POINTS_PER_CORRECT_ANSWER * (bonusPoints ? BONUS_MULTIPLIER : 1)
@@ -162,16 +164,13 @@ function App() {
       return
     }
 
-    const nextIndex = randomIndex(WHEEL_QUESTION_IDS.length)
-    const currentRotation = ((rotation % 360) + 360) % 360
-    const selectedCenter = nextIndex * segmentAngle + segmentAngle / 2
-    const targetRotation = (360 - selectedCenter) % 360
-    const rotationDelta = (targetRotation - currentRotation + 360) % 360
+    const plan = planSpin(WHEEL_CATEGORIES, rotation, 6)
+    const landing = landingRotation(WHEEL_CATEGORIES.length, plan.sectorIndex)
 
-    setSelectedQuestionId(WHEEL_QUESTION_IDS[nextIndex])
-    setRotation(currentRotation + rotationDelta + 6 * 360)
+    setSelectedQuestionId(plan.questionId)
+    setRotation(plan.driftTarget + forwardDelta(plan.driftTarget, landing))
     clearRoundState()
-    void loadQuestion(WHEEL_QUESTION_IDS[nextIndex])
+    void loadQuestion(plan.questionId)
   }
 
   function handlePlayerNameChange(playerId: PlayerId, name: string) {
@@ -353,7 +352,7 @@ function App() {
 
       <div className={styles.gameLayout}>
         <Wheel
-          questionIds={WHEEL_QUESTION_IDS}
+          sectors={WHEEL_CATEGORIES}
           rotation={rotation}
           loading={phase === 'loading'}
           onSpin={handleSpin}

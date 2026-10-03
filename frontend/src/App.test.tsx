@@ -239,6 +239,25 @@ describe('trivia game', () => {
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('shows the six canonical categories as the wheel sectors', () => {
+    const fetchMock = vi.fn()
+    mockQuestionResponse(fetchMock)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    expect(screen.getByTestId('wheel-disc')).toHaveAccessibleName(
+      'Ruleta con 6 categorías',
+    )
+
+    expect(screen.getByText('🏛️')).toBeInTheDocument()
+    expect(screen.getByText('⚽')).toBeInTheDocument()
+    expect(screen.getByText('🌍')).toBeInTheDocument()
+    expect(screen.getByText('🎨')).toBeInTheDocument()
+    expect(screen.getByText('🔬')).toBeInTheDocument()
+    expect(screen.getByText('🎬')).toBeInTheDocument()
+  })
+
   it('keeps custom names, accepts a wrong answer and changes turns', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn()

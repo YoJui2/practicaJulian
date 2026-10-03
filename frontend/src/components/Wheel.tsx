@@ -1,45 +1,29 @@
 import type { CSSProperties } from 'react'
 import frontDecoration from '../../../app/icon/cocodra.png'
+import type { WheelSector } from '../game/wheel'
 import styles from './Wheel.module.css'
 
 interface WheelProps {
-  questionIds: readonly number[]
+  sectors: readonly WheelSector[]
   rotation: number
   loading: boolean
   onSpin: () => void
 }
 
-const CLASSIC_CATEGORY_COLORS = [
-  '#f4c542',
-  '#e94b4b',
-  '#3d8edb',
-  '#f08b3e',
-  '#4ccf64',
-  '#9b4de8',
-]
-const CATEGORY_EMOJIS = ['🏛️', '⚽', '🌍', '🎨', '🔬', '🎬']
+function createGradient(sectors: readonly WheelSector[]): string {
+  const segmentAngle = 360 / sectors.length
 
-function segmentColor(index: number): string {
-  return CLASSIC_CATEGORY_COLORS[index % CLASSIC_CATEGORY_COLORS.length]
+  return sectors
+    .map((sector, index) => {
+      const start = index * segmentAngle
+      const end = (index + 1) * segmentAngle
+      return `${sector.color} ${start}deg ${end}deg`
+    })
+    .join(', ')
 }
 
-function createGradient(segmentCount: number): string {
-  const segmentAngle = 360 / segmentCount
-
-  return Array.from({ length: segmentCount }, (_, index) => {
-    const start = index * segmentAngle
-    const end = (index + 1) * segmentAngle
-    return `${segmentColor(index)} ${start}deg ${end}deg`
-  }).join(', ')
-}
-
-export function Wheel({
-  questionIds,
-  rotation,
-  loading,
-  onSpin,
-}: WheelProps) {
-  const segmentAngle = 360 / questionIds.length
+export function Wheel({ sectors, rotation, loading, onSpin }: WheelProps) {
+  const segmentAngle = 360 / sectors.length
 
   return (
     <section className={styles.wheelPanel} aria-labelledby="wheel-title">
@@ -53,12 +37,12 @@ export function Wheel({
             className={`${styles.wheel} ${loading ? styles.loading : ''}`}
             data-testid="wheel-disc"
             role="img"
-            aria-label={`Ruleta clásica con ${questionIds.length} sectores`}
+            aria-label={`Ruleta con ${sectors.length} categorías`}
             style={
               {
                 transform: `rotate(${rotation}deg)`,
                 '--wheel-rotation': `${rotation}deg`,
-                background: `conic-gradient(${createGradient(questionIds.length)})`,
+                background: `conic-gradient(${createGradient(sectors)})`,
               } as CSSProperties
             }
           >
@@ -74,16 +58,16 @@ export function Wheel({
               } as CSSProperties
             }
           >
-            {questionIds.map((questionId, index) => {
+            {sectors.map((sector, index) => {
               const angle = index * segmentAngle + segmentAngle / 2
 
               return (
                 <span
                   className={styles.segmentLabel}
-                  key={questionId}
+                  key={sector.name}
                   style={{ '--label-angle': `${angle}deg` } as CSSProperties}
                 >
-                  {CATEGORY_EMOJIS[index % CATEGORY_EMOJIS.length]}
+                  {sector.emoji}
                 </span>
               )
             })}
