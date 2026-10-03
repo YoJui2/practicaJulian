@@ -20,13 +20,13 @@
 }
 
 .trigger:hover {
-  background: #ffd166;
+  background: #eefbf6;
   box-shadow: 7px 7px 0 #073b4c;
   transform: translate(-2px, -2px);
 }
 
 .trigger[aria-expanded='true'] {
-  background: #ffd166;
+  background: #eefbf6;
 }
 
 .preview {
@@ -102,7 +102,7 @@
 }
 
 .closeButton:hover {
-  background: #ffd166;
+  background: #eefbf6;
   color: #073b4c;
   box-shadow: 2px 2px 0 #073b4c;
   transform: translate(2px, 2px);
@@ -115,12 +115,13 @@
 }
 
 .windowChoice {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 0.45rem;
   border: 4px solid #073b4c;
   padding: 0.65rem 0.35rem;
-  background: #ffd166;
+  background: #ffffff;
   font: inherit;
   cursor: pointer;
   transition:
@@ -130,7 +131,7 @@
 }
 
 .windowChoice:hover {
-  background: #06d6a0;
+  background: #eefbf6;
   box-shadow: 5px 5px 0 #073b4c;
   transform: translate(-2px, -2px);
 }
@@ -150,13 +151,28 @@
   text-transform: uppercase;
 }
 
-.windowChoiceSelected {
-  background: #ef476f;
-  box-shadow: inset 0 0 0 4px #fff8ef;
+.windowChoiceSelected,
+.windowChoiceSelected:hover {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 5px #073b4c, 5px 5px 0 #073b4c;
 }
 
-.windowChoiceSelected .windowChoiceName {
-  color: #fff8ef;
+.windowChoiceSelected::after {
+  position: absolute;
+  top: -0.7rem;
+  right: -0.7rem;
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  border: 3px solid #073b4c;
+  border-radius: 999px;
+  background: #06d6a0;
+  color: #073b4c;
+  content: '\2713';
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 @media (max-width: 430px) {

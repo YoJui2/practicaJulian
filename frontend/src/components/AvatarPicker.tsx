@@ -79,7 +79,11 @@ export function AvatarPicker({
 
                 return (
                   <button
-                    aria-label={avatar.label}
+                    aria-label={
+                      selected
+                        ? `${avatar.label}. Equipado`
+                        : avatar.label
+                    }
                     aria-pressed={selected}
                     className={`${styles.windowChoice} ${
                       selected ? styles.windowChoiceSelected : ''

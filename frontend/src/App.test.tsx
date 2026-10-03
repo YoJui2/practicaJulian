@@ -187,7 +187,9 @@ describe('trivia game', () => {
     })
     expect(within(window).getAllByRole('button', { name: /^Avatar / })).toHaveLength(8)
     expect(
-      within(window).getByRole('button', { name: 'Avatar verde con gorra' }),
+      within(window).getByRole('button', {
+        name: 'Avatar verde con gorra. Equipado',
+      }),
     ).toHaveAttribute('aria-pressed', 'true')
 
     await user.click(
@@ -202,7 +204,9 @@ describe('trivia game', () => {
 
     const reopened = screen.getByRole('dialog')
     expect(
-      within(reopened).getByRole('button', { name: 'Avatar turquesa' }),
+      within(reopened).getByRole('button', {
+        name: 'Avatar turquesa. Equipado',
+      }),
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
       within(reopened).getByRole('button', { name: 'Avatar verde con gorra' }),
@@ -229,7 +233,9 @@ describe('trivia game', () => {
     )
 
     expect(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Avatar rojo' }),
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Avatar cereza. Equipado',
+      }),
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
