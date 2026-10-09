@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import func
@@ -125,15 +125,8 @@ def stats(db: Session = Depends(get_db)):
     return {"total": total, "by_category": by_category}
 
 
-@app.get("/questions/{question_id}")
-def get_question(
-    question_id: int,
-    lang: Literal["es", "en"] = DEFAULT_TARGET_LANG,
-    db: Session = Depends(get_db),
-):
-    question = db.query(Question).filter(Question.id == question_id).first()
-    if not question:
-        return {"error": "Pregunta no encontrada"}
+def _format_question(question: Question, lang: Literal["es", "en"]) -> dict:
+    source_options = [option.text for option in question.options] or None
 
     if lang == DEFAULT_SOURCE_LANG:
         return {
@@ -142,13 +135,15 @@ def get_question(
             "answer": question.answer,
             "category": question.category,
             "source": question.source,
-            "options": build_options(question.question, question.answer),
+            "options": source_options
+            or build_options(question.question, question.answer),
             "lang": DEFAULT_SOURCE_LANG,
         }
 
     translated = translate_question(
         question.question,
         question.answer,
+        options=source_options,
         target_lang=lang,
     )
     return {
@@ -160,6 +155,44 @@ def get_question(
         "options": translated["options"],
         "lang": translated["lang"],
     }
+
+
+@app.get("/questions/random/{category_name}")
+def get_random_question(
+    category_name: str,
+    lang: Literal["es", "en"] = DEFAULT_TARGET_LANG,
+    db: Session = Depends(get_db),
+):
+    question = (
+        db.query(Question)
+        .filter(
+            (Question.category == category_name)
+            | Question.categorizations.any(
+                Categorization.category_name == category_name
+            )
+        )
+        .order_by(func.random())
+        .first()
+    )
+    if question is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No hay preguntas disponibles para la categoría {category_name}.",
+        )
+    return _format_question(question, lang)
+
+
+@app.get("/questions/{question_id}")
+def get_question(
+    question_id: int,
+    lang: Literal["es", "en"] = DEFAULT_TARGET_LANG,
+    db: Session = Depends(get_db),
+):
+    question = db.query(Question).filter(Question.id == question_id).first()
+    if not question:
+        raise HTTPException(status_code=404, detail="Pregunta no encontrada")
+
+    return _format_question(question, lang)
 
 
 @app.get("/categories")

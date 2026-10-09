@@ -40,8 +40,8 @@ def test_create_question_rejects_a_number_instead_of_text(client):
     assert response.status_code == 422
 
 
-def test_get_missing_question_returns_an_error_message(client):
+def test_get_missing_question_returns_a_not_found_error(client):
     response = client.get("/questions/999")
 
-    assert response.status_code == 200
-    assert response.json() == {"error": "Pregunta no encontrada"}
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Pregunta no encontrada"}

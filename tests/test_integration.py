@@ -1,3 +1,11 @@
+import pytest
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.main import app
+from app.models import Categorization, Question, QuestionOption
+
+
 def test_api_can_create_read_and_count_a_question(client):
     response = client.post(
         "/questions",
@@ -61,6 +69,93 @@ def test_get_question_options_are_generated_instead_of_read_from_the_dataset(cli
     assert {"es:Cordoba", "es:Rosario", "es:Mendoza"}.issubset(
         set(body["options"])
     )
+
+
+def test_get_question_translates_the_dataset_options(client, monkeypatch):
+    created = client.post(
+        "/questions",
+        json={
+            "question": "Which planet is known as the Red Planet?",
+            "answer": "Mars",
+        },
+    )
+    question_id = created.json()["id"]
+    db_generator = app.dependency_overrides[get_db]()
+    db: Session = next(db_generator)
+    try:
+        question = db.query(Question).filter(Question.id == question_id).one()
+        question.options = [
+            QuestionOption(position=index, text=option)
+            for index, option in enumerate(
+                ["Mars", "Venus", "Jupiter", "Saturn"]
+            )
+        ]
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    monkeypatch.setattr(
+        "app.main.build_options",
+        lambda *_: pytest.fail("dataset options should be reused"),
+    )
+
+    english = client.get(f"/questions/{question_id}?lang=en").json()
+    spanish = client.get(f"/questions/{question_id}").json()
+
+    assert english["options"] == ["Mars", "Venus", "Jupiter", "Saturn"]
+    assert spanish["options"] == [
+        "es:Mars",
+        "es:Venus",
+        "es:Jupiter",
+        "es:Saturn",
+    ]
+    assert spanish["answer"] == "es:Mars"
+
+
+def test_random_question_uses_category_and_returns_api_format(client):
+    created = client.post(
+        "/questions",
+        json={
+            "question": "Which planet is known as the Red Planet?",
+            "answer": "Mars",
+            "category": "ciencia",
+            "source": "OpenTriviaQA: science-technology",
+        },
+    )
+    question_id = created.json()["id"]
+    db_generator = app.dependency_overrides[get_db]()
+    db: Session = next(db_generator)
+    try:
+        question = db.query(Question).filter(Question.id == question_id).one()
+        question.options = [
+            QuestionOption(position=index, text=option)
+            for index, option in enumerate(["Mars", "Venus"])
+        ]
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    response = client.get("/questions/random/ciencia?lang=en")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": question_id,
+        "question": "Which planet is known as the Red Planet?",
+        "answer": "Mars",
+        "category": "ciencia",
+        "source": "OpenTriviaQA: science-technology",
+        "options": ["Mars", "Venus"],
+        "lang": "en",
+    }
+
+
+def test_random_question_returns_a_clear_error_for_empty_category(client):
+    response = client.get("/questions/random/arte")
+
+    assert response.status_code == 404
+    assert "No hay preguntas disponibles" in response.json()["detail"]
 
 
 def test_get_question_returns_the_original_language_when_requested(client):

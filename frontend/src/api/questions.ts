@@ -17,7 +17,7 @@ export class QuestionsApiError extends Error {
   }
 }
 
-function isQuestion(value: unknown, requestedId: number): value is Question {
+function isQuestion(value: unknown, requestedId?: number): value is Question {
   if (typeof value !== 'object' || value === null) {
     return false
   }
@@ -27,7 +27,8 @@ function isQuestion(value: unknown, requestedId: number): value is Question {
   const options = question.options
 
   return (
-    question.id === requestedId &&
+    Number.isInteger(question.id) &&
+    (requestedId === undefined || question.id === requestedId) &&
     typeof question.question === 'string' &&
     question.question.trim().length > 0 &&
     typeof question.answer === 'string' &&
@@ -44,14 +45,15 @@ function isQuestion(value: unknown, requestedId: number): value is Question {
   )
 }
 
-export async function getQuestion(
-  questionId: number,
+async function fetchQuestion(
+  path: string,
+  requestedId?: number,
   signal?: AbortSignal,
 ): Promise<Question> {
   let response: Response
 
   try {
-    response = await fetch(`${API_BASE_URL}/questions/${questionId}`, {
+    response = await fetch(`${API_BASE_URL}${path}`, {
       headers: { Accept: 'application/json' },
       signal,
     })
@@ -76,18 +78,38 @@ export async function getQuestion(
     const message =
       typeof body === 'object' &&
       body !== null &&
-      typeof (body as Record<string, unknown>).error === 'string'
-        ? (body as Record<string, string>).error
+      (typeof (body as Record<string, unknown>).error === 'string' ||
+        typeof (body as Record<string, unknown>).detail === 'string')
+        ? ((body as Record<string, string>).error ??
+          (body as Record<string, string>).detail)
         : 'La API no pudo devolver la pregunta.'
 
     throw new QuestionsApiError(message)
   }
 
-  if (!isQuestion(body, questionId)) {
+  if (!isQuestion(body, requestedId)) {
     throw new QuestionsApiError(
       'La pregunta solicitada no existe o tiene un formato inesperado.',
     )
   }
 
   return body
+}
+
+export async function getQuestion(
+  questionId: number,
+  signal?: AbortSignal,
+): Promise<Question> {
+  return fetchQuestion(`/questions/${questionId}`, questionId, signal)
+}
+
+export async function getRandomQuestion(
+  categoryName: string,
+  signal?: AbortSignal,
+): Promise<Question> {
+  return fetchQuestion(
+    `/questions/random/${encodeURIComponent(categoryName)}`,
+    undefined,
+    signal,
+  )
 }

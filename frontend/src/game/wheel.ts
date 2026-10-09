@@ -2,12 +2,9 @@ import type { WheelCategory } from '../config'
 import { WHEEL_MIN_SETTLE_DEGREES } from '../config'
 import { randomIndex } from './random'
 
-export interface WheelSector extends WheelCategory {
-  questionIds: readonly number[]
-}
+export type WheelSector = WheelCategory
 
 export interface SpinPlan {
-  questionId: number
   sectorIndex: number
   driftTarget: number
 }
@@ -31,7 +28,9 @@ export function landingRotation(
 ): number {
   const segmentAngle = 360 / sectorCount
 
-  return normalizeRotation(360 - (sectorIndex * segmentAngle + segmentAngle / 2))
+  return normalizeRotation(
+    360 - (sectorIndex * segmentAngle + segmentAngle / 2),
+  )
 }
 
 export function planSpin(
@@ -40,10 +39,8 @@ export function planSpin(
   driftTurns: number,
 ): SpinPlan {
   const sectorIndex = randomIndex(sectors.length)
-  const { questionIds } = sectors[sectorIndex]
 
   return {
-    questionId: questionIds[randomIndex(questionIds.length)],
     sectorIndex,
     driftTarget: currentRotation + 360 * driftTurns,
   }

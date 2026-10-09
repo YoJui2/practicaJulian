@@ -13,6 +13,12 @@ class Question(Base):
     category = Column(String(100), nullable=True)
     source = Column(String(255), nullable=True)
 
+    options = relationship(
+        "QuestionOption",
+        back_populates="question",
+        cascade="all, delete-orphan",
+        order_by="QuestionOption.position",
+    )
     categorizations = relationship(
         "Categorization",
         back_populates="question",
@@ -23,6 +29,17 @@ class Question(Base):
         back_populates="question",
         cascade="all, delete-orphan",
     )
+
+
+class QuestionOption(Base):
+    __tablename__ = "question_options"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
+    position = Column(Integer, nullable=False)
+    text = Column(Text, nullable=False)
+
+    question = relationship("Question", back_populates="options")
 
 
 class Categorization(Base):

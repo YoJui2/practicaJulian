@@ -14,9 +14,9 @@ vi.mock('./random', () => ({
 }))
 
 const SECTORS: readonly WheelSector[] = [
-  { name: 'historia', label: 'Historia', emoji: '🏛️', color: '#f4c542', questionIds: [11, 12] },
-  { name: 'deportes', label: 'Deportes', emoji: '⚽', color: '#e94b4b', questionIds: [21, 22] },
-  { name: 'arte', label: 'Arte', emoji: '🎨', color: '#f08b3e', questionIds: [31] },
+  { name: 'historia', label: 'Historia', emoji: '🏛️', color: '#f4c542' },
+  { name: 'deportes', label: 'Deportes', emoji: '⚽', color: '#e94b4b' },
+  { name: 'arte', label: 'Arte', emoji: '🎨', color: '#f08b3e' },
 ]
 
 describe('normalizeRotation', () => {
@@ -63,27 +63,19 @@ describe('WHEEL_CATEGORIES', () => {
     ])
   })
 
-  it('gives every category a unique color and a non-empty provisional pool', () => {
+  it('gives every category a unique color', () => {
     const colors = WHEEL_CATEGORIES.map((category) => category.color)
-    const ids = WHEEL_CATEGORIES.flatMap((category) => category.questionIds)
 
     expect(new Set(colors).size).toBe(WHEEL_CATEGORIES.length)
-
-    for (const category of WHEEL_CATEGORIES) {
-      expect(category.questionIds.length).toBeGreaterThan(0)
-    }
-
-    expect(new Set(ids).size).toBe(ids.length)
   })
 })
 
 describe('planSpin', () => {
-  it('picks a sector and a question that belongs to it', () => {
+  it('picks a sector for the API to use when choosing a question', () => {
     const plan = planSpin(SECTORS, 42, 5)
 
     expect(plan.sectorIndex).toBe(0)
-    expect(plan.questionId).toBe(11)
-    expect(SECTORS[plan.sectorIndex].questionIds).toContain(plan.questionId)
+    expect(SECTORS[plan.sectorIndex].name).toBe('historia')
   })
 
   it('requests a forward drift of whole turns', () => {

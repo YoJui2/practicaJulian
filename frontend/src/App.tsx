@@ -1,14 +1,11 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { getQuestion, QuestionsApiError } from './api/questions'
+import { getRandomQuestion, QuestionsApiError } from './api/questions'
 import type { Question } from './api/questions'
 import { AVATARS } from './components/Avatars'
 import { AvatarPicker } from './components/AvatarPicker'
 import { Wheel } from './components/Wheel'
-import {
-  POINTS_PER_CORRECT_ANSWER,
-  WHEEL_CATEGORIES,
-} from './config'
+import { POINTS_PER_CORRECT_ANSWER, WHEEL_CATEGORIES } from './config'
 import { normalizeAnswer } from './game/answer'
 import { forwardDelta, landingRotation, planSpin } from './game/wheel'
 import {
@@ -24,12 +21,7 @@ import type { WildcardId, WildcardUses } from './game/wildcards'
 import styles from './App.module.css'
 
 type PlayerId = 'playerOne' | 'playerTwo'
-type GamePhase =
-  | 'ready'
-  | 'loading'
-  | 'answering'
-  | 'feedback'
-  | 'error'
+type GamePhase = 'ready' | 'loading' | 'answering' | 'feedback' | 'error'
 
 interface Player {
   name: string
@@ -66,9 +58,9 @@ function App() {
   const [activePlayerId, setActivePlayerId] = useState<PlayerId>('playerOne')
   const [phase, setPhase] = useState<GamePhase>('ready')
   const [round, setRound] = useState(1)
-  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(
-    null,
-  )
+  const [selectedCategoryName, setSelectedCategoryName] = useState<
+    string | null
+  >(null)
   const [rotation, setRotation] = useState(0)
   const [question, setQuestion] = useState<Question | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
@@ -81,8 +73,7 @@ function App() {
   const [usedWildcards, setUsedWildcards] = useState<WildcardId[]>([])
   const activePlayer = players[activePlayerId]
   const gameLocked = phase !== 'ready'
-  const stake =
-    POINTS_PER_CORRECT_ANSWER * (bonusPoints ? BONUS_MULTIPLIER : 1)
+  const stake = POINTS_PER_CORRECT_ANSWER * (bonusPoints ? BONUS_MULTIPLIER : 1)
 
   const visibleOptions = question
     ? question.options.filter(
@@ -94,8 +85,14 @@ function App() {
 
   const statusMessage = useMemo(() => {
     switch (phase) {
-      case 'loading':
-        return `Buscando la pregunta ${selectedQuestionId} para ${activePlayer.name}.`
+      case 'loading': {
+        const categoryLabel =
+          WHEEL_CATEGORIES.find(
+            (category) => category.name === selectedCategoryName,
+          )?.label ?? selectedCategoryName
+
+        return `Buscando una pregunta de ${categoryLabel} para ${activePlayer.name}.`
+      }
       case 'answering': {
         const base = retryActive
           ? attemptsLeft > 1
@@ -125,7 +122,7 @@ function App() {
     phase,
     question?.answer,
     retryActive,
-    selectedQuestionId,
+    selectedCategoryName,
     stake,
   ])
 
@@ -141,12 +138,12 @@ function App() {
     setUsedWildcards([])
   }
 
-  async function loadQuestion(questionId: number) {
+  async function loadQuestion(categoryName: string) {
     setPhase('loading')
     setErrorMessage('')
 
     try {
-      const nextQuestion = await getQuestion(questionId)
+      const nextQuestion = await getRandomQuestion(categoryName)
       setQuestion(nextQuestion)
       setPhase('answering')
     } catch (error) {
@@ -166,11 +163,12 @@ function App() {
 
     const plan = planSpin(WHEEL_CATEGORIES, rotation, 6)
     const landing = landingRotation(WHEEL_CATEGORIES.length, plan.sectorIndex)
+    const category = WHEEL_CATEGORIES[plan.sectorIndex]
 
-    setSelectedQuestionId(plan.questionId)
+    setSelectedCategoryName(category.name)
     setRotation(plan.driftTarget + forwardDelta(plan.driftTarget, landing))
     clearRoundState()
-    void loadQuestion(plan.questionId)
+    void loadQuestion(category.name)
   }
 
   function handlePlayerNameChange(playerId: PlayerId, name: string) {
@@ -244,8 +242,7 @@ function App() {
     }
 
     const answer = chosen.trim()
-    const correct =
-      normalizeAnswer(answer) === normalizeAnswer(question.answer)
+    const correct = normalizeAnswer(answer) === normalizeAnswer(question.answer)
 
     if (!correct && attemptsLeft > 1) {
       setEliminatedOptions((current) => [...current, answer])
@@ -261,9 +258,7 @@ function App() {
       return
     }
 
-    if (
-      !canUseWildcard(activePlayer.wildcardUses, usedWildcards, wildcardId)
-    ) {
+    if (!canUseWildcard(activePlayer.wildcardUses, usedWildcards, wildcardId)) {
       return
     }
 
@@ -292,7 +287,7 @@ function App() {
       current === 'playerOne' ? 'playerTwo' : 'playerOne',
     )
     setRound((current) => current + 1)
-    setSelectedQuestionId(null)
+    setSelectedCategoryName(null)
     clearRoundState()
     setPhase('ready')
   }
@@ -384,9 +379,16 @@ function App() {
               <p>{errorMessage}</p>
               <button
                 type="button"
-                onClick={() => void loadQuestion(selectedQuestionId!)}
+                onClick={() => {
+                  if (selectedCategoryName) {
+                    void loadQuestion(selectedCategoryName)
+                  }
+                }}
               >
-                Reintentar pregunta #{selectedQuestionId}
+                Reintentar pregunta
+                {selectedCategoryName
+                  ? ` de ${WHEEL_CATEGORIES.find((category) => category.name === selectedCategoryName)?.label ?? selectedCategoryName}`
+                  : ''}
               </button>
             </div>
           )}
@@ -415,8 +417,9 @@ function App() {
                           wildcard.id,
                         )
                         const total = maxUsesOf(wildcard.id)
-                        const spentThisRound =
-                          usedWildcards.includes(wildcard.id)
+                        const spentThisRound = usedWildcards.includes(
+                          wildcard.id,
+                        )
                         const usable = !spentThisRound && remaining > 0
                         const availability =
                           remaining === 0

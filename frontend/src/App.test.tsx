@@ -9,14 +9,12 @@ afterEach(() => {
 })
 
 function mockQuestionResponse(fetchMock: ReturnType<typeof vi.fn>) {
-  fetchMock.mockImplementation((url: string) => {
-    const questionId = Number(url.split('/').at(-1))
-
+  fetchMock.mockImplementation(() => {
     return Promise.resolve({
       ok: true,
       status: 200,
       json: vi.fn().mockResolvedValue({
-        id: questionId,
+        id: 9,
         question: '¿Cuál es la capital de Argentina?',
         answer: 'Buenos Aires',
         category: 'Geografía',
@@ -86,9 +84,7 @@ describe('trivia game', () => {
       }),
     ).toBeInTheDocument()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Buenos Aires' }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Buenos Aires' }))
 
     expect(await screen.findByText('¡Correcto!')).toBeInTheDocument()
     expect(screen.getByText('10')).toBeInTheDocument()
@@ -112,12 +108,12 @@ describe('trivia game', () => {
 
   it('hides the translation notice when the API does not report a language', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn().mockImplementation((url: string) =>
+    const fetchMock = vi.fn().mockImplementation(() =>
       Promise.resolve({
         ok: true,
         status: 200,
         json: vi.fn().mockResolvedValue({
-          id: Number(url.split('/').at(-1)),
+          id: 9,
           question: '¿Cuál es la capital de Argentina?',
           answer: 'Buenos Aires',
           category: 'Geografía',
@@ -141,7 +137,7 @@ describe('trivia game', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('retries the same question after an API connection error', async () => {
+  it('retries the selected category after an API connection error', async () => {
     const user = userEvent.setup()
     const fetchMock = vi
       .fn()
@@ -166,6 +162,7 @@ describe('trivia game', () => {
     ).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(fetchMock.mock.calls[0][0]).toBe(fetchMock.mock.calls[1][0])
+    expect(fetchMock.mock.calls[0][0]).toMatch(/\/questions\/random\/[a-z-]+$/)
   })
 
   it('opens the avatar window and applies the chosen avatar', async () => {
@@ -185,7 +182,9 @@ describe('trivia game', () => {
     const window = screen.getByRole('dialog', {
       name: 'Elegí el avatar de Jugador 2',
     })
-    expect(within(window).getAllByRole('button', { name: /^Avatar / })).toHaveLength(8)
+    expect(
+      within(window).getAllByRole('button', { name: /^Avatar / }),
+    ).toHaveLength(8)
     expect(
       within(window).getByRole('button', {
         name: 'Avatar verde con gorra. Equipado',

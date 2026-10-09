@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getQuestion, QuestionsApiError } from './questions'
+import { getQuestion, getRandomQuestion, QuestionsApiError } from './questions'
 
 function response(body: unknown, ok = true, status = 200) {
   return {
@@ -140,5 +140,44 @@ describe('getQuestion', () => {
     )
 
     await expect(getQuestion(1)).rejects.toThrow('respuesta inválida')
+  })
+})
+
+describe('getRandomQuestion', () => {
+  it('requests a question by category and validates the returned shape', async () => {
+    const question = {
+      id: 49_594,
+      question: '¿Quién ganó?',
+      answer: 'Equipo A',
+      category: 'deportes',
+      source: 'OpenTriviaQA: sports',
+      options: ['Equipo A', 'Equipo B'],
+      lang: 'es',
+    }
+    const fetchMock = vi.fn().mockResolvedValue(response(question))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getRandomQuestion('deportes')).resolves.toEqual(question)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/questions/random/deportes',
+      expect.objectContaining({ headers: { Accept: 'application/json' } }),
+    )
+  })
+
+  it('encodes the category and reports a missing category', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        response({ detail: 'No hay preguntas disponibles.' }, false, 404),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getRandomQuestion('arte y cultura')).rejects.toEqual(
+      new QuestionsApiError('No hay preguntas disponibles.'),
+    )
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/questions/random/arte%20y%20cultura',
+      expect.objectContaining({ headers: { Accept: 'application/json' } }),
+    )
   })
 })
