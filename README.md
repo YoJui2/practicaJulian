@@ -30,11 +30,19 @@ Juego web de preguntas para dos jugadores en el mismo navegador. Incluye una rul
    docker compose up -d db
    ```
 
-5. Cargar las preguntas una sola vez si la base está vacía:
+5. Cargar CareQA en español si quieres reemplazar las preguntas actuales:
 
-   ```bat
-   poetry run python -m app.load_data
-   ```
+```bat
+poetry run python -m app.load_data --dataset careqa
+```
+
+El cargador también crea la columna `dataset_choices` al iniciar la API o al importar el dataset. CareQA conserva sus cuatro alternativas y no las traduce ni genera nuevas. La carga reemplaza todas las preguntas actuales (y reinicia sus IDs), por lo que las referencias relacionadas a preguntas se eliminan en cascada.
+
+Para consultar el endpoint de Hugging Face que devuelve las URL de los archivos Parquet:
+
+```bat
+curl -X GET "https://huggingface.co/api/datasets/HPAI-BSC/CareQA/parquet/CareQA_es/test"
+```
 
 ## Levantar el juego
 

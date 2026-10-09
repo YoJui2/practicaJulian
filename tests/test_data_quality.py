@@ -1,4 +1,52 @@
-from app.load_data import _metadata_as_dict, simpleqa_row_to_fields
+from app.load_data import (
+    CAREQA_DATASET,
+    DEFAULT_DATASET,
+    _metadata_as_dict,
+    careqa_row_to_fields,
+    simpleqa_row_to_fields,
+)
+from app.models import CAREQA_ES_DATASET
+
+
+def _careqa_row(**overrides):
+    row = {
+        "question": "  ¿Cuál es el tratamiento?  ",
+        "op1": " Primera opción ",
+        "op2": "Segunda opción",
+        "op3": "Tercera opción",
+        "op4": "Cuarta opción",
+        "cop": 2,
+        "category": "Medicine",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_careqa_row_to_fields_preserves_options_and_correct_answer():
+    result = careqa_row_to_fields(_careqa_row())
+
+    assert result == {
+        "question": "¿Cuál es el tratamiento?",
+        "answer": "Segunda opción",
+        "category": "Medicine",
+        "source": CAREQA_ES_DATASET,
+        "dataset_choices": [
+            "Primera opción",
+            "Segunda opción",
+            "Tercera opción",
+            "Cuarta opción",
+        ],
+    }
+    assert DEFAULT_DATASET == CAREQA_DATASET
+
+
+def test_careqa_row_to_fields_rejects_invalid_rows():
+    assert careqa_row_to_fields(_careqa_row(question="  ")) is None
+    assert careqa_row_to_fields(_careqa_row(op3="")) is None
+    assert careqa_row_to_fields(_careqa_row(op4="Segunda opción")) is None
+    assert careqa_row_to_fields(_careqa_row(cop=0)) is None
+    assert careqa_row_to_fields(_careqa_row(cop=5)) is None
+    assert careqa_row_to_fields(_careqa_row(cop="invalid")) is None
 
 
 def test_metadata_as_dict_reads_json_text():

@@ -396,7 +396,10 @@ function App() {
               <div className={styles.questionMeta}>
                 <span>Pregunta #{question.id}</span>
                 {question.category && <span>{question.category}</span>}
-                {question.lang && (
+                {question.source === 'careqa-es' && (
+                  <span>Contenido en español (sin traducir)</span>
+                )}
+                {question.lang && question.source !== 'careqa-es' && (
                   <span>Traducida automáticamente ({question.lang})</span>
                 )}
               </div>

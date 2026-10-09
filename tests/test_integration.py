@@ -1,3 +1,10 @@
+import pytest
+from fastapi import HTTPException
+
+from app.database import get_db
+from app.models import CAREQA_ES_DATASET, Question
+
+
 def test_api_can_create_read_and_count_a_question(client):
     response = client.post(
         "/questions",
@@ -90,3 +97,87 @@ def test_get_question_rejects_an_unsupported_language(client):
     response = client.get(f"/questions/{created.json()['id']}?lang=fr")
 
     assert response.status_code == 422
+
+
+def test_get_careqa_question_returns_saved_spanish_options(client, monkeypatch):
+    def unexpected_generation(*args, **kwargs):
+        raise AssertionError(
+            f"CareQA no debe generar ni traducir opciones: {args!r}, {kwargs!r}"
+        )
+
+    monkeypatch.setattr("app.main.build_options", unexpected_generation)
+    monkeypatch.setattr("app.main.translate_question", unexpected_generation)
+    created = client.post(
+        "/questions",
+        json={
+            "question": "¿Qué recomienda el protocolo?",
+            "answer": "La opción correcta",
+            "category": "Medicine",
+            "source": CAREQA_ES_DATASET,
+        },
+    )
+    assert created.status_code == 201
+
+    question_id = created.json()["id"]
+    db_generator = client.app.dependency_overrides[get_db]()
+    db = next(db_generator)
+    try:
+        question = db.query(Question).filter(Question.id == question_id).first()
+        question.dataset_choices = [
+            "La opción correcta",
+            "Alternativa dos",
+            "Alternativa tres",
+            "Alternativa cuatro",
+        ]
+        db.commit()
+    finally:
+        db_generator.close()
+
+    response = client.get(f"/questions/{question_id}")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": question_id,
+        "question": "¿Qué recomienda el protocolo?",
+        "answer": "La opción correcta",
+        "category": "Medicine",
+        "source": CAREQA_ES_DATASET,
+        "options": [
+            "La opción correcta",
+            "Alternativa dos",
+            "Alternativa tres",
+            "Alternativa cuatro",
+        ],
+        "lang": "es",
+    }
+
+
+def test_get_careqa_question_rejects_english(client):
+    created = client.post(
+        "/questions",
+        json={
+            "question": "¿Qué recomienda el protocolo?",
+            "answer": "La opción correcta",
+            "source": CAREQA_ES_DATASET,
+        },
+    )
+
+    response = client.get(f"/questions/{created.json()['id']}?lang=en")
+
+    assert response.status_code == 422
+
+
+def test_careqa_options_fail_if_missing_or_invalid():
+    from app.main import _dataset_options
+
+    invalid_question = Question(
+        question="Pregunta",
+        answer="Correcta",
+        source=CAREQA_ES_DATASET,
+        dataset_choices=["Correcta", "Incorrecta"],
+    )
+
+    with pytest.raises(HTTPException) as error:
+        _dataset_options(invalid_question)
+
+    assert error.value.status_code == 500

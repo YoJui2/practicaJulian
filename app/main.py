@@ -1,14 +1,14 @@
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.database import get_db, engine
-from app.models import Base, Categorization, Question
+from app.database import ensure_database_schema, get_db, engine
+from app.models import CAREQA_ES_DATASET, Categorization, Question
 from app.categories import CATEGORIES
 from app.live_translation import translate_question
 from app.options import build_options
@@ -25,7 +25,7 @@ class QuestionCreate(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    Base.metadata.create_all(bind=engine)
+    ensure_database_schema(engine)
     yield
 
 
@@ -135,6 +135,22 @@ def get_question(
     if not question:
         return {"error": "Pregunta no encontrada"}
 
+    if question.source == CAREQA_ES_DATASET:
+        if lang != DEFAULT_TARGET_LANG:
+            raise HTTPException(
+                status_code=422,
+                detail="El dataset CareQA en español no tiene traducción al inglés.",
+            )
+        return {
+            "id": question.id,
+            "question": question.question,
+            "answer": question.answer,
+            "category": question.category,
+            "source": question.source,
+            "options": _dataset_options(question),
+            "lang": DEFAULT_TARGET_LANG,
+        }
+
     if lang == DEFAULT_SOURCE_LANG:
         return {
             "id": question.id,
@@ -160,6 +176,22 @@ def get_question(
         "options": translated["options"],
         "lang": translated["lang"],
     }
+
+
+def _dataset_options(question: Question) -> list[str]:
+    choices = question.dataset_choices
+    if (
+        not isinstance(choices, list)
+        or len(choices) != 4
+        or not all(isinstance(choice, str) and choice.strip() for choice in choices)
+        or len({choice.casefold() for choice in choices}) != 4
+        or question.answer not in choices
+    ):
+        raise HTTPException(
+            status_code=500,
+            detail="Las opciones guardadas para esta pregunta están incompletas.",
+        )
+    return choices
 
 
 @app.get("/categories")

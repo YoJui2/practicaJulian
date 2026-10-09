@@ -1,7 +1,21 @@
 from app.database import Base
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
+
+
+CAREQA_ES_DATASET = "careqa-es"
 
 
 class Question(Base):
@@ -12,6 +26,7 @@ class Question(Base):
     answer = Column(Text, nullable=False)
     category = Column(String(100), nullable=True)
     source = Column(String(255), nullable=True)
+    dataset_choices = Column(JSON, nullable=True)
 
     categorizations = relationship(
         "Categorization",

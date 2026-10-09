@@ -126,3 +126,14 @@ Compatible con transformers 5.15.1.
 Genera varias respuestas y selecciona tres distintas.
 Evita opciones genéricas como “todas las anteriores”.
 Mantiene OPTIONS_MODEL para cambiar el modelo por variable de entorno.
+
+ Dataset CareQA en español (mantiene las cuatro opciones originales; no traduce ni genera opciones):
+
+ docker compose up -d db
+ poetry run python -m app.load_data --dataset careqa
+
+ El cargador reemplaza las preguntas actuales y reinicia sus IDs.
+ El esquema agrega automáticamente la columna dataset_choices si todavía no existe.
+
+ Consultar el endpoint de Hugging Face que lista los archivos Parquet:
+ curl -X GET "https://huggingface.co/api/datasets/HPAI-BSC/CareQA/parquet/CareQA_es/test"
