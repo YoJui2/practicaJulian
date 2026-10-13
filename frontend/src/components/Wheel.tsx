@@ -9,7 +9,6 @@ interface WheelProps {
   spinning: boolean
   settling: boolean
   onSpin: () => void
-  onSpinEnd: () => void
 }
 
 function createGradient(sectors: readonly WheelSector[]): string {
@@ -30,7 +29,6 @@ export function Wheel({
   spinning,
   settling,
   onSpin,
-  onSpinEnd,
 }: WheelProps) {
   const segmentAngle = 360 / sectors.length
 
@@ -49,11 +47,6 @@ export function Wheel({
             data-settling={settling}
             role="img"
             aria-label={`Ruleta con ${sectors.length} categorías`}
-            onTransitionEnd={(event) => {
-              if (event.propertyName === 'transform') {
-                onSpinEnd()
-              }
-            }}
             style={
               {
                 transform: `rotate(${rotation}deg)`,

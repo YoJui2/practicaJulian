@@ -1,11 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -46,9 +39,6 @@ async function spinWheel(user: ReturnType<typeof userEvent.setup>) {
       'data-settling',
       'true',
     )
-  })
-  fireEvent.transitionEnd(screen.getByTestId('wheel-disc'), {
-    propertyName: 'transform',
   })
   await waitFor(() => {
     expect(screen.queryByTestId('wheel-disc')).not.toBeInTheDocument()
@@ -173,9 +163,6 @@ describe('trivia game', () => {
         'data-settling',
         'true',
       )
-    })
-    fireEvent.transitionEnd(screen.getByTestId('wheel-disc'), {
-      propertyName: 'transform',
     })
 
     expect(

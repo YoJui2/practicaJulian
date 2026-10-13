@@ -71,7 +71,6 @@ function App() {
   const [question, setQuestion] = useState<Question | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
-  const [spinDone, setSpinDone] = useState(false)
   const [fetchDone, setFetchDone] = useState(false)
   const [hiddenOptions, setHiddenOptions] = useState<string[]>([])
   const [eliminatedOptions, setEliminatedOptions] = useState<string[]>([])
@@ -145,7 +144,7 @@ function App() {
       return
     }
 
-    if (phase !== 'settling' || !spinDone) {
+    if (phase !== 'settling') {
       return
     }
 
@@ -154,7 +153,7 @@ function App() {
     }, WHEEL_REVEAL_MS)
 
     return () => window.clearTimeout(timer)
-  }, [fetchDone, phase, question, spinDone])
+  }, [fetchDone, phase, question])
 
   function clearRoundState() {
     setQuestion(null)
@@ -200,13 +199,8 @@ function App() {
     setSelectedCategoryName(category.name)
     setRotation(plan.driftTarget + forwardDelta(plan.driftTarget, landing))
     clearRoundState()
-    setSpinDone(false)
     setPhase('spinning')
     void loadQuestion(category.name)
-  }
-
-  function handleSpinEnd() {
-    setSpinDone(true)
   }
 
   async function handleRetryQuestion() {
@@ -400,7 +394,6 @@ function App() {
             spinning={phase === 'spinning' || phase === 'settling'}
             settling={phase === 'settling'}
             onSpin={handleSpin}
-            onSpinEnd={handleSpinEnd}
           />
         ) : (
           <section
