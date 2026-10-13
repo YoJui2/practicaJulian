@@ -125,6 +125,55 @@ describe('trivia game', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps the wheel spinning until the question request completes', async () => {
+    const user = userEvent.setup()
+    let resolveFetch!: (response: Response) => void
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Girar la ruleta' }))
+
+    const wheel = screen.getByTestId('wheel-disc')
+    const firstTarget = wheel.style.transform
+    fireEvent.transitionEnd(wheel, { propertyName: 'transform' })
+
+    expect(screen.getByTestId('wheel-disc').style.transform).not.toBe(
+      firstTarget,
+    )
+
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: 9,
+          question: '¿Cuál es la capital de Argentina?',
+          answer: 'Buenos Aires',
+          category: 'Geografía',
+          source: null,
+          options: ['Buenos Aires', 'Rosario', 'Córdoba', 'Mendoza'],
+          lang: 'es',
+        }),
+      } as Response)
+    })
+
+    fireEvent.transitionEnd(screen.getByTestId('wheel-disc'), {
+      propertyName: 'transform',
+    })
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '¿Cuál es la capital de Argentina?',
+      }),
+    ).toBeInTheDocument()
+  })
+
   it('hides the translation notice when the API does not report a language', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn().mockImplementation(() =>

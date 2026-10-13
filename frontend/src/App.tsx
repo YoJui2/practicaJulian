@@ -196,6 +196,15 @@ function App() {
   }
 
   function handleSpinEnd() {
+    const prefersReducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (!fetchDone && !prefersReducedMotion) {
+      setRotation((current) => current + 360)
+      return
+    }
+
     setSpinDone(true)
   }
 

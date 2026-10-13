@@ -78,6 +78,18 @@ def test_translate_texts_translates_every_text_in_a_single_batch(monkeypatch):
     assert translated == ["es:Who wrote Hamlet?", "es:William Shakespeare"]
 
 
+def test_translate_texts_does_not_skip_english_article_a(monkeypatch):
+    tokenizer = _BatchTokenizer()
+    monkeypatch.setattr(
+        "app.translator._get_translator",
+        lambda: (tokenizer, _BatchModel()),
+    )
+
+    translated = translate_texts(["What is a black hole?"])
+
+    assert translated == ["es:What is a black hole?"]
+
+
 def test_translate_texts_reuses_previous_translations(monkeypatch):
     calls = []
 
@@ -138,6 +150,7 @@ def test_looks_spanish_detects_spanish_text(text):
         "Who wrote Hamlet?",
         "William Shakespeare",
         "Rosario",
+        "What is a black hole?",
     ],
 )
 def test_looks_spanish_detects_non_spanish_text(text):
@@ -154,3 +167,7 @@ def test_needs_translation_skips_text_that_should_not_be_translated(text):
 
 def test_needs_translation_accepts_english_text():
     assert needs_translation("Who wrote Hamlet?") is True
+
+
+def test_needs_translation_accepts_english_with_the_article_a():
+    assert needs_translation("What is a black hole?") is True

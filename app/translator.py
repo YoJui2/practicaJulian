@@ -18,7 +18,6 @@ MAX_GENERATED_TOKENS = 512
 
 SPANISH_MARKERS = frozenset(
     {
-        "a",
         "al",
         "como",
         "con",
