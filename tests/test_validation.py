@@ -31,6 +31,15 @@ def test_create_question_rejects_question_over_character_limit(client):
     assert response.status_code == 422
 
 
+def test_create_question_rejects_true_false_answer(client):
+    response = client.post(
+        "/questions",
+        json={"question": "Is this accurate?", "answer": "True"},
+    )
+
+    assert response.status_code == 422
+
+
 def test_create_question_accepts_a_valid_payload(client):
     response = client.post(
         "/questions",

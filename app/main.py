@@ -3,13 +3,17 @@ from typing import Literal
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db, engine
-from app.data_quality import MAX_QUESTION_LENGTH
-from app.models import Base, Categorization, Question
+from app.data_quality import (
+    MAX_QUESTION_LENGTH,
+    TRUE_FALSE_ANSWERS,
+    is_true_false_question,
+)
+from app.models import Base, Categorization, Question, QuestionOption
 from app.categories import CATEGORIES
 from app.live_translation import translate_question
 from app.options import build_options
@@ -21,6 +25,13 @@ class QuestionCreate(BaseModel):
     answer: str = Field(..., min_length=1)
     category: str | None = Field(None, max_length=100)
     source: str | None = Field(None, max_length=255)
+
+    @field_validator("answer")
+    @classmethod
+    def reject_true_false_answer(cls, answer: str) -> str:
+        if is_true_false_question(answer, []):
+            raise ValueError("No se permiten preguntas de verdadero o falso.")
+        return answer
 
 
 @asynccontextmanager
@@ -172,6 +183,35 @@ def get_random_question(
                 Categorization.category_name == category_name
             ),
             func.length(func.trim(Question.question)) <= MAX_QUESTION_LENGTH,
+            func.lower(func.trim(func.trim(Question.answer), ".!?")).notin_(
+                TRUE_FALSE_ANSWERS
+            ),
+            ~(
+                Question.options.any(
+                    func.lower(
+                        func.trim(func.trim(QuestionOption.text), ".!?")
+                    ).in_(("true", "verdadero", "verdadera"))
+                )
+                & Question.options.any(
+                    func.lower(
+                        func.trim(func.trim(QuestionOption.text), ".!?")
+                    ).in_(("false", "falso", "falsa"))
+                )
+                & ~Question.options.any(
+                    ~func.lower(
+                        func.trim(func.trim(QuestionOption.text), ".!?")
+                    ).in_(
+                        (
+                            "true",
+                            "false",
+                            "verdadero",
+                            "verdadera",
+                            "falso",
+                            "falsa",
+                        )
+                    )
+                )
+            ),
         )
         .order_by(func.random())
         .first()

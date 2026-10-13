@@ -62,7 +62,7 @@ def test_opentrivia_row_uses_the_matching_choice_as_the_answer():
     assert result["category"] == "arte"
 
 
-def test_opentrivia_row_preserves_two_choices_and_removes_duplicates():
+def test_opentrivia_row_rejects_true_false_questions():
     row = {
         "category": "animals",
         "question": "Are cats mammals?",
@@ -70,10 +70,29 @@ def test_opentrivia_row_preserves_two_choices_and_removes_duplicates():
         "answer": "True",
     }
 
-    result = opentrivia_row_to_fields(row)
+    assert opentrivia_row_to_fields(row) is None
 
-    assert result["options"] == ["True", "False"]
-    assert result["answer"] == "True"
+
+def test_opentrivia_row_rejects_true_false_options_regardless_of_answer_case():
+    row = {
+        "category": "animals",
+        "question": "Can cats purr?",
+        "choices": [" false ", "TRUE"],
+        "answer": " false ",
+    }
+
+    assert opentrivia_row_to_fields(row) is None
+
+
+def test_opentrivia_row_keeps_regular_two_choice_questions():
+    row = {
+        "category": "animals",
+        "question": "Are cats mammals?",
+        "choices": ["Mammals", "Reptiles"],
+        "answer": "Mammals",
+    }
+
+    assert opentrivia_row_to_fields(row)["options"] == ["Mammals", "Reptiles"]
 
 
 def test_opentrivia_row_rejects_missing_or_invalid_choices():

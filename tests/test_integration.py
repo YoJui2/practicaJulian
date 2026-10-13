@@ -184,6 +184,41 @@ def test_random_question_skips_legacy_questions_over_the_character_limit(client)
     assert response.json()["id"] == valid_response.json()["id"]
 
 
+def test_random_question_skips_legacy_true_false_rows(client):
+    valid_response = client.post(
+        "/questions",
+        json={
+            "question": "Which planet is red?",
+            "answer": "Mars",
+            "category": "ciencia",
+        },
+    )
+    assert valid_response.status_code == 201
+
+    db_generator = app.dependency_overrides[get_db]()
+    db: Session = next(db_generator)
+    try:
+        true_false = Question(
+            question="Can cats purr?",
+            answer="True",
+            category="ciencia",
+            options=[
+                QuestionOption(position=0, text="True"),
+                QuestionOption(position=1, text="False"),
+            ],
+        )
+        db.add(true_false)
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    response = client.get("/questions/random/ciencia?lang=en")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == valid_response.json()["id"]
+
+
 def test_random_question_returns_a_clear_error_for_empty_category(client):
     response = client.get("/questions/random/arte")
 

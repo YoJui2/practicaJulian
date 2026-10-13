@@ -1,5 +1,8 @@
 from app.load_data import _metadata_as_dict, simpleqa_row_to_fields
-from app.data_quality import MAX_QUESTION_LENGTH
+from app.data_quality import (
+    MAX_QUESTION_LENGTH,
+    is_true_false_question,
+)
 
 
 def test_metadata_as_dict_reads_json_text():
@@ -65,3 +68,21 @@ def test_simpleqa_row_accepts_question_at_the_character_limit():
     }
 
     assert len(simpleqa_row_to_fields(row)["question"]) == MAX_QUESTION_LENGTH
+
+
+def test_simpleqa_row_rejects_boolean_answers():
+    row = {"problem": "Is this accurate?", "answer": "True"}
+
+    assert simpleqa_row_to_fields(row) is None
+
+
+def test_true_false_detection_accepts_english_and_spanish_choices():
+    assert is_true_false_question("True", ["True", "False"])
+    assert is_true_false_question("falsa", ["Verdadera", "Falsa"])
+
+
+def test_true_false_detection_keeps_regular_multiple_choice_questions():
+    assert not is_true_false_question(
+        "Mars",
+        ["Mars", "Venus", "Earth", "Jupiter"],
+    )

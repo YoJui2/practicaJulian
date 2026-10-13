@@ -37,8 +37,8 @@ Juego web de preguntas para dos jugadores en el mismo navegador. Incluye una rul
    ```
 
    El cargador de OpenTriviaQA lee el dataset completo y descarta las preguntas
-   inválidas o de más de 200 caracteres. La API de juego también omite preguntas
-   existentes que superen ese límite.
+   inválidas, de más de 70 caracteres o de verdadero/falso. La API de juego
+   también omite preguntas existentes que no cumplan esos criterios.
 
 ## Levantar el juego
 

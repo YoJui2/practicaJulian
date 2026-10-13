@@ -9,7 +9,7 @@ import requests
 from sqlalchemy import delete
 
 from app.database import SessionLocal, engine
-from app.data_quality import MAX_QUESTION_LENGTH
+from app.data_quality import MAX_QUESTION_LENGTH, is_true_false_question
 from app.models import Base, Categorization, Question, QuestionOption, Translation
 
 DATASET_URL = (
@@ -65,7 +65,12 @@ def simpleqa_row_to_fields(row) -> dict | None:
     a = row.get("answer") or row.get("answer_alias") or ""
     q = " ".join(str(q).split()) if pd.notna(q) else ""
     a = str(a).strip() if pd.notna(a) else ""
-    if not q or len(q) > MAX_QUESTION_LENGTH or not a:
+    if (
+        not q
+        or len(q) > MAX_QUESTION_LENGTH
+        or not a
+        or is_true_false_question(a, [])
+    ):
         return None
 
     meta = _metadata_as_dict(row.get("metadata"))
@@ -126,7 +131,12 @@ def simpleqa_row_to_fields(row) -> dict | None:
     a = row.get("answer") or ""
     q = " ".join(str(q).split()) if pd.notna(q) else ""
     a = str(a).strip() if pd.notna(a) else ""
-    if not q or len(q) > MAX_QUESTION_LENGTH or not a:
+    if (
+        not q
+        or len(q) > MAX_QUESTION_LENGTH
+        or not a
+        or is_true_false_question(a, [])
+    ):
         return None
 
     meta = _metadata_as_dict(row.get("metadata"))
@@ -187,6 +197,9 @@ def opentrivia_row_to_fields(row) -> dict | None:
             seen_choices.add(normalized)
 
     if len(choices) < 2:
+        return None
+
+    if is_true_false_question(answer, choices):
         return None
 
     answer_key = " ".join(answer.split()).casefold()
