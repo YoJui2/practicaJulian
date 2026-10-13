@@ -1,7 +1,20 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+
+vi.mock('./config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./config')>()
+
+  return { ...actual, WHEEL_REVEAL_MS: 0 }
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -30,6 +43,12 @@ async function spinWheel(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Girar la ruleta' }))
   fireEvent.transitionEnd(screen.getByTestId('wheel-disc'), {
     propertyName: 'transform',
+  })
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  await waitFor(() => {
+    expect(screen.queryByTestId('wheel-disc')).not.toBeInTheDocument()
   })
 }
 
@@ -424,7 +443,7 @@ describe('trivia game', () => {
 
     expect(await screen.findByText('¡Correcto!')).toBeInTheDocument()
     expect(screen.getByText('20')).toBeInTheDocument()
-    expect(screen.getByText(/Sumaste 20 puntos/)).toBeInTheDocument()
+    expect(screen.getByText('20 puntos')).toBeInTheDocument()
   })
 
   it('no deja usar dos veces el mismo comodin en la misma ronda', async () => {
@@ -492,7 +511,7 @@ describe('trivia game', () => {
 
     await startRound(user)
     expect(
-      screen.getByText('Turno de Jugador 2. Podés girar la ruleta.'),
+      screen.getByText('Turno de Jugador 2. Elegí una opción.'),
     ).toBeInTheDocument()
     expect(wildcardAvailability('doblar')).toContain(
       'Usos disponibles: 3 de 3.',
@@ -501,7 +520,7 @@ describe('trivia game', () => {
 
     await startRound(user)
     expect(
-      screen.getByText('Turno de Jugador 1. Podés girar la ruleta.'),
+      screen.getByText('Turno de Jugador 1. Elegí una opción.'),
     ).toBeInTheDocument()
     expect(wildcardButton('doblar')).toBeEnabled()
     expect(wildcardButton('doblar')).toHaveTextContent('2/3')

@@ -56,7 +56,5 @@ export const WHEEL_CATEGORIES: readonly WheelCategory[] = [
 export const POINTS_PER_CORRECT_ANSWER = 10
 
 export const WHEEL_DRIFT_TURNS = 8
-export const WHEEL_DRIFT_MS = 12000
-export const WHEEL_SETTLE_MS = 1400
-export const WHEEL_REVEAL_MS = 2500
+export const WHEEL_REVEAL_MS = 2000
 export const WHEEL_MIN_SETTLE_DEGREES = 24

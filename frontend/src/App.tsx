@@ -1,11 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { getRandomQuestion, QuestionsApiError } from './api/questions'
 import type { Question } from './api/questions'
 import { AVATARS } from './components/Avatars'
 import { AvatarPicker } from './components/AvatarPicker'
 import { Wheel } from './components/Wheel'
-import { POINTS_PER_CORRECT_ANSWER, WHEEL_CATEGORIES } from './config'
+import {
+  POINTS_PER_CORRECT_ANSWER,
+  WHEEL_CATEGORIES,
+  WHEEL_DRIFT_TURNS,
+  WHEEL_REVEAL_MS,
+} from './config'
 import { normalizeAnswer } from './game/answer'
 import { forwardDelta, landingRotation, planSpin } from './game/wheel'
 import {
@@ -21,7 +26,7 @@ import type { WildcardId, WildcardUses } from './game/wildcards'
 import styles from './App.module.css'
 
 type PlayerId = 'playerOne' | 'playerTwo'
-type GamePhase = 'ready' | 'loading' | 'answering' | 'feedback' | 'error'
+type GamePhase = 'ready' | 'spinning' | 'answering' | 'feedback' | 'error'
 
 interface Player {
   name: string
@@ -65,6 +70,8 @@ function App() {
   const [question, setQuestion] = useState<Question | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
+  const [spinDone, setSpinDone] = useState(false)
+  const [fetchDone, setFetchDone] = useState(false)
   const [hiddenOptions, setHiddenOptions] = useState<string[]>([])
   const [eliminatedOptions, setEliminatedOptions] = useState<string[]>([])
   const [attemptsLeft, setAttemptsLeft] = useState(1)
@@ -73,6 +80,7 @@ function App() {
   const [usedWildcards, setUsedWildcards] = useState<WildcardId[]>([])
   const activePlayer = players[activePlayerId]
   const gameLocked = phase !== 'ready'
+  const showWheel = phase === 'ready' || phase === 'spinning'
   const stake = POINTS_PER_CORRECT_ANSWER * (bonusPoints ? BONUS_MULTIPLIER : 1)
 
   const visibleOptions = question
@@ -85,13 +93,13 @@ function App() {
 
   const statusMessage = useMemo(() => {
     switch (phase) {
-      case 'loading': {
+      case 'spinning': {
         const categoryLabel =
           WHEEL_CATEGORIES.find(
             (category) => category.name === selectedCategoryName,
           )?.label ?? selectedCategoryName
 
-        return `Buscando una pregunta de ${categoryLabel} para ${activePlayer.name}.`
+        return `La ruleta se detiene en ${categoryLabel} para ${activePlayer.name}.`
       }
       case 'answering': {
         const base = retryActive
@@ -126,6 +134,18 @@ function App() {
     stake,
   ])
 
+  useEffect(() => {
+    if (phase !== 'spinning' || !spinDone || !fetchDone) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setPhase(question ? 'answering' : 'error')
+    }, WHEEL_REVEAL_MS)
+
+    return () => window.clearTimeout(timer)
+  }, [fetchDone, phase, question, spinDone])
+
   function clearRoundState() {
     setQuestion(null)
     setFeedback(null)
@@ -138,21 +158,23 @@ function App() {
     setUsedWildcards([])
   }
 
-  async function loadQuestion(categoryName: string) {
-    setPhase('loading')
+  async function loadQuestion(categoryName: string): Promise<Question | null> {
+    setFetchDone(false)
     setErrorMessage('')
 
     try {
       const nextQuestion = await getRandomQuestion(categoryName)
       setQuestion(nextQuestion)
-      setPhase('answering')
+      return nextQuestion
     } catch (error) {
       setErrorMessage(
         error instanceof QuestionsApiError
           ? error.message
           : 'Ocurrió un error inesperado al pedir la pregunta.',
       )
-      setPhase('error')
+      return null
+    } finally {
+      setFetchDone(true)
     }
   }
 
@@ -161,14 +183,29 @@ function App() {
       return
     }
 
-    const plan = planSpin(WHEEL_CATEGORIES, rotation, 6)
+    const plan = planSpin(WHEEL_CATEGORIES, rotation, WHEEL_DRIFT_TURNS)
     const landing = landingRotation(WHEEL_CATEGORIES.length, plan.sectorIndex)
     const category = WHEEL_CATEGORIES[plan.sectorIndex]
 
     setSelectedCategoryName(category.name)
     setRotation(plan.driftTarget + forwardDelta(plan.driftTarget, landing))
     clearRoundState()
+    setSpinDone(false)
+    setPhase('spinning')
     void loadQuestion(category.name)
+  }
+
+  function handleSpinEnd() {
+    setSpinDone(true)
+  }
+
+  async function handleRetryQuestion() {
+    if (!selectedCategoryName) {
+      return
+    }
+
+    const nextQuestion = await loadQuestion(selectedCategoryName)
+    setPhase(nextQuestion ? 'answering' : 'error')
   }
 
   function handlePlayerNameChange(playerId: PlayerId, name: string) {
@@ -346,161 +383,148 @@ function App() {
       </p>
 
       <div className={styles.gameLayout}>
-        <Wheel
-          sectors={WHEEL_CATEGORIES}
-          rotation={rotation}
-          loading={phase === 'loading'}
-          onSpin={handleSpin}
-        />
+        {showWheel ? (
+          <Wheel
+            sectors={WHEEL_CATEGORIES}
+            rotation={rotation}
+            spinning={phase === 'spinning'}
+            onSpin={handleSpin}
+            onSpinEnd={handleSpinEnd}
+          />
+        ) : (
+          <section
+            className={styles.questionPanel}
+            aria-labelledby="question-title"
+          >
+            <h2 id="question-title">Pregunta</h2>
 
-        <section
-          className={styles.questionPanel}
-          aria-labelledby="question-title"
-        >
-          <h2 id="question-title">Pregunta</h2>
+            {phase === 'error' && (
+              <div className={styles.errorState} role="alert">
+                <h3>No pudimos cargar la pregunta</h3>
+                <p>{errorMessage}</p>
+                <button
+                  type="button"
+                  onClick={() => void handleRetryQuestion()}
+                >
+                  Reintentar pregunta
+                  {selectedCategoryName
+                    ? ` de ${WHEEL_CATEGORIES.find((category) => category.name === selectedCategoryName)?.label ?? selectedCategoryName}`
+                    : ''}
+                </button>
+              </div>
+            )}
 
-          {phase === 'ready' && (
-            <div className={styles.emptyState}>
-              <span aria-hidden="true">?</span>
-              <p>Girala para elegir la próxima pregunta.</p>
-            </div>
-          )}
+            {(phase === 'answering' || phase === 'feedback') && question && (
+              <div className={styles.questionContent}>
+                <div className={styles.questionMeta}>
+                  <span>Pregunta #{question.id}</span>
+                  {question.category && <span>{question.category}</span>}
+                  {question.lang && (
+                    <span>Traducida automáticamente ({question.lang})</span>
+                  )}
+                </div>
+                <h3>{question.question}</h3>
 
-          {phase === 'loading' && (
-            <div className={styles.loadingState} role="status">
-              <span className={styles.loader} aria-hidden="true" />
-              <p>Buscando la pregunta en la API…</p>
-            </div>
-          )}
+                {phase === 'answering' ? (
+                  <>
+                    <div className={styles.wildcards}>
+                      <p className={styles.wildcardsTitle}>
+                        Comodines de {activePlayer.name}
+                      </p>
+                      <div className={styles.wildcardsRow}>
+                        {WILDCARDS.map((wildcard) => {
+                          const remaining = usesLeft(
+                            activePlayer.wildcardUses,
+                            wildcard.id,
+                          )
+                          const total = maxUsesOf(wildcard.id)
+                          const spentThisRound = usedWildcards.includes(
+                            wildcard.id,
+                          )
+                          const usable = !spentThisRound && remaining > 0
+                          const availability =
+                            remaining === 0
+                              ? 'Sin usos disponibles.'
+                              : spentThisRound
+                                ? 'Ya lo usaste en esta ronda.'
+                                : `Usos disponibles: ${remaining} de ${total}.`
 
-          {phase === 'error' && (
-            <div className={styles.errorState} role="alert">
-              <h3>No pudimos cargar la pregunta</h3>
-              <p>{errorMessage}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedCategoryName) {
-                    void loadQuestion(selectedCategoryName)
-                  }
-                }}
-              >
-                Reintentar pregunta
-                {selectedCategoryName
-                  ? ` de ${WHEEL_CATEGORIES.find((category) => category.name === selectedCategoryName)?.label ?? selectedCategoryName}`
-                  : ''}
-              </button>
-            </div>
-          )}
+                          return (
+                            <button
+                              aria-label={`${wildcard.name}. ${wildcard.description} ${availability}`}
+                              className={`${styles.wildcard} ${
+                                usable
+                                  ? ''
+                                  : spentThisRound
+                                    ? styles.wildcardSpent
+                                    : styles.wildcardUnavailable
+                              }`}
+                              disabled={!usable}
+                              key={wildcard.id}
+                              onClick={() => handleUseWildcard(wildcard.id)}
+                              type="button"
+                            >
+                              <strong>{wildcard.name}</strong>
+                              <span>{wildcard.description}</span>
+                              <span className={styles.wildcardUses}>
+                                {remaining}/{total}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
 
-          {(phase === 'answering' || phase === 'feedback') && question && (
-            <div className={styles.questionContent}>
-              <div className={styles.questionMeta}>
-                <span>Pregunta #{question.id}</span>
-                {question.category && <span>{question.category}</span>}
-                {question.lang && (
-                  <span>Traducida automáticamente ({question.lang})</span>
+                    <form onSubmit={handleAnswerSubmit}>
+                      <div
+                        aria-label="Opciones de respuesta"
+                        className={styles.options}
+                        role="group"
+                      >
+                        {visibleOptions.map((option) => (
+                          <button
+                            className={styles.option}
+                            data-tone={question.options.indexOf(option) + 1}
+                            key={option}
+                            name="option"
+                            type="submit"
+                            value={option}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </form>
+                  </>
+                ) : (
+                  <div
+                    className={`${styles.feedback} ${
+                      feedback?.correct ? styles.correct : styles.incorrect
+                    }`}
+                  >
+                    <h3>
+                      {feedback?.correct ? '¡Correcto!' : 'No es correcto'}
+                    </h3>
+                    {feedback && !feedback.correct && (
+                      <p>Tu respuesta: {feedback.submittedAnswer}</p>
+                    )}
+                    <p>
+                      Respuesta correcta: <strong>{question.answer}</strong>
+                    </p>
+                    {feedback?.correct && (
+                      <p>
+                        Sumaste <strong>{feedback.points} puntos</strong>.
+                      </p>
+                    )}
+                    <button type="button" onClick={handleNextRound}>
+                      Siguiente jugador
+                    </button>
+                  </div>
                 )}
               </div>
-              <h3>{question.question}</h3>
-
-              {phase === 'answering' ? (
-                <>
-                  <div className={styles.wildcards}>
-                    <p className={styles.wildcardsTitle}>
-                      Comodines de {activePlayer.name}
-                    </p>
-                    <div className={styles.wildcardsRow}>
-                      {WILDCARDS.map((wildcard) => {
-                        const remaining = usesLeft(
-                          activePlayer.wildcardUses,
-                          wildcard.id,
-                        )
-                        const total = maxUsesOf(wildcard.id)
-                        const spentThisRound = usedWildcards.includes(
-                          wildcard.id,
-                        )
-                        const usable = !spentThisRound && remaining > 0
-                        const availability =
-                          remaining === 0
-                            ? 'Sin usos disponibles.'
-                            : spentThisRound
-                              ? 'Ya lo usaste en esta ronda.'
-                              : `Usos disponibles: ${remaining} de ${total}.`
-
-                        return (
-                          <button
-                            aria-label={`${wildcard.name}. ${wildcard.description} ${availability}`}
-                            className={`${styles.wildcard} ${
-                              usable
-                                ? ''
-                                : spentThisRound
-                                  ? styles.wildcardSpent
-                                  : styles.wildcardUnavailable
-                            }`}
-                            disabled={!usable}
-                            key={wildcard.id}
-                            onClick={() => handleUseWildcard(wildcard.id)}
-                            type="button"
-                          >
-                            <strong>{wildcard.name}</strong>
-                            <span>{wildcard.description}</span>
-                            <span className={styles.wildcardUses}>
-                              {remaining}/{total}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleAnswerSubmit}>
-                    <div
-                      aria-label="Opciones de respuesta"
-                      className={styles.options}
-                      role="group"
-                    >
-                      {visibleOptions.map((option) => (
-                        <button
-                          className={styles.option}
-                          data-tone={question.options.indexOf(option) + 1}
-                          key={option}
-                          name="option"
-                          type="submit"
-                          value={option}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  </form>
-                </>
-              ) : (
-                <div
-                  className={`${styles.feedback} ${
-                    feedback?.correct ? styles.correct : styles.incorrect
-                  }`}
-                >
-                  <h3>{feedback?.correct ? '¡Correcto!' : 'No es correcto'}</h3>
-                  {feedback && !feedback.correct && (
-                    <p>Tu respuesta: {feedback.submittedAnswer}</p>
-                  )}
-                  <p>
-                    Respuesta correcta: <strong>{question.answer}</strong>
-                  </p>
-                  {feedback?.correct && (
-                    <p>
-                      Sumaste <strong>{feedback.points} puntos</strong>.
-                    </p>
-                  )}
-                  <button type="button" onClick={handleNextRound}>
-                    Siguiente jugador
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+            )}
+          </section>
+        )}
       </div>
     </main>
   )

@@ -6,8 +6,9 @@ import styles from './Wheel.module.css'
 interface WheelProps {
   sectors: readonly WheelSector[]
   rotation: number
-  loading: boolean
+  spinning: boolean
   onSpin: () => void
+  onSpinEnd: () => void
 }
 
 function createGradient(sectors: readonly WheelSector[]): string {
@@ -22,7 +23,13 @@ function createGradient(sectors: readonly WheelSector[]): string {
     .join(', ')
 }
 
-export function Wheel({ sectors, rotation, loading, onSpin }: WheelProps) {
+export function Wheel({
+  sectors,
+  rotation,
+  spinning,
+  onSpin,
+  onSpinEnd,
+}: WheelProps) {
   const segmentAngle = 360 / sectors.length
 
   return (
@@ -34,10 +41,15 @@ export function Wheel({ sectors, rotation, loading, onSpin }: WheelProps) {
         <div className={styles.wheelStage}>
           <div className={styles.pointer} aria-hidden="true" />
           <div
-            className={`${styles.wheel} ${loading ? styles.loading : ''}`}
+            className={styles.wheel}
             data-testid="wheel-disc"
             role="img"
             aria-label={`Ruleta con ${sectors.length} categorías`}
+            onTransitionEnd={(event) => {
+              if (event.propertyName === 'transform') {
+                onSpinEnd()
+              }
+            }}
             style={
               {
                 transform: `rotate(${rotation}deg)`,
@@ -49,7 +61,7 @@ export function Wheel({ sectors, rotation, loading, onSpin }: WheelProps) {
             <span className={styles.hub} aria-hidden="true" />
           </div>
           <div
-            className={`${styles.labels} ${loading ? styles.loading : ''}`}
+            className={styles.labels}
             aria-hidden="true"
             style={
               {
@@ -86,9 +98,9 @@ export function Wheel({ sectors, rotation, loading, onSpin }: WheelProps) {
         className={styles.spinButton}
         type="button"
         onClick={onSpin}
-        disabled={loading}
+        disabled={spinning}
       >
-        {loading ? 'Girando…' : 'Girar la ruleta'}
+        {spinning ? 'Girando…' : 'Girar la ruleta'}
       </button>
     </section>
   )

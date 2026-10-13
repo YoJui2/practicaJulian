@@ -234,12 +234,14 @@ input:disabled {
 
 .gameLayout {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.9fr) minmax(20rem, 1.1fr);
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
   gap: 1.5rem;
   align-items: start;
 }
 
 .questionPanel {
+  width: min(100%, 48rem);
   min-height: 34rem;
   padding: clamp(1.25rem, 3vw, 1.85rem);
   border: 4px solid #073b4c;
@@ -259,45 +261,6 @@ input:disabled {
   font-weight: 900;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-}
-
-.emptyState,
-.loadingState {
-  display: grid;
-  min-height: 28rem;
-  place-content: center;
-  justify-items: center;
-  color: #073b4c;
-  text-align: center;
-}
-
-.emptyState span {
-  display: grid;
-  width: 7rem;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 4px solid #073b4c;
-  background: #ffd166;
-  box-shadow: 8px 8px 0 #073b4c;
-  font-size: 3.6rem;
-  font-weight: 900;
-  transform: rotate(4deg);
-}
-
-.emptyState p,
-.loadingState p {
-  max-width: 17rem;
-  font-weight: 900;
-}
-
-.loader {
-  width: 3.25rem;
-  aspect-ratio: 1;
-  border: 4px solid #ffd166;
-  border-top-color: #ef476f;
-  border-right-color: #073b4c;
-  border-radius: 50%;
-  animation: spin 800ms linear infinite;
 }
 
 .errorState {
@@ -568,12 +531,6 @@ input:disabled {
   text-transform: uppercase;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @keyframes drift {
   to {
     transform: rotate(360deg);
@@ -641,8 +598,6 @@ input:disabled {
     box-shadow: 6px 6px 0 #073b4c;
   }
 
-  .emptyState,
-  .loadingState,
   .errorState {
     min-height: 19rem;
   }
@@ -666,7 +621,6 @@ input:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loader,
   .page::before,
   .page::after {
     animation: none;
