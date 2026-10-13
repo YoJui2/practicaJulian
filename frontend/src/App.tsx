@@ -26,7 +26,8 @@ import type { WildcardId, WildcardUses } from './game/wildcards'
 import styles from './App.module.css'
 
 type PlayerId = 'playerOne' | 'playerTwo'
-type GamePhase = 'ready' | 'spinning' | 'answering' | 'feedback' | 'error'
+type GamePhase =
+  'ready' | 'spinning' | 'settling' | 'answering' | 'feedback' | 'error'
 
 interface Player {
   name: string
@@ -80,7 +81,8 @@ function App() {
   const [usedWildcards, setUsedWildcards] = useState<WildcardId[]>([])
   const activePlayer = players[activePlayerId]
   const gameLocked = phase !== 'ready'
-  const showWheel = phase === 'ready' || phase === 'spinning'
+  const showWheel =
+    phase === 'ready' || phase === 'spinning' || phase === 'settling'
   const stake = POINTS_PER_CORRECT_ANSWER * (bonusPoints ? BONUS_MULTIPLIER : 1)
 
   const visibleOptions = question
@@ -93,13 +95,16 @@ function App() {
 
   const statusMessage = useMemo(() => {
     switch (phase) {
-      case 'spinning': {
+      case 'spinning':
+      case 'settling': {
         const categoryLabel =
           WHEEL_CATEGORIES.find(
             (category) => category.name === selectedCategoryName,
           )?.label ?? selectedCategoryName
 
-        return `La ruleta se detiene en ${categoryLabel} para ${activePlayer.name}.`
+        return phase === 'spinning'
+          ? `La ruleta sigue girando mientras busca una pregunta de ${categoryLabel} para ${activePlayer.name}.`
+          : `La ruleta se detiene en ${categoryLabel} para ${activePlayer.name}.`
       }
       case 'answering': {
         const base = retryActive
@@ -135,7 +140,12 @@ function App() {
   ])
 
   useEffect(() => {
-    if (phase !== 'spinning' || !spinDone || !fetchDone) {
+    if (phase === 'spinning' && fetchDone) {
+      setPhase('settling')
+      return
+    }
+
+    if (phase !== 'settling' || !spinDone) {
       return
     }
 
@@ -196,15 +206,6 @@ function App() {
   }
 
   function handleSpinEnd() {
-    const prefersReducedMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (!fetchDone && !prefersReducedMotion) {
-      setRotation((current) => current + 360)
-      return
-    }
-
     setSpinDone(true)
   }
 
@@ -396,7 +397,8 @@ function App() {
           <Wheel
             sectors={WHEEL_CATEGORIES}
             rotation={rotation}
-            spinning={phase === 'spinning'}
+            spinning={phase === 'spinning' || phase === 'settling'}
+            settling={phase === 'settling'}
             onSpin={handleSpin}
             onSpinEnd={handleSpinEnd}
           />

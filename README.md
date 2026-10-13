@@ -36,6 +36,10 @@ Juego web de preguntas para dos jugadores en el mismo navegador. Incluye una rul
    poetry run python -m app.load_data
    ```
 
+   El cargador de OpenTriviaQA lee el dataset completo y descarta las preguntas
+   inválidas o de más de 200 caracteres. La API de juego también omite preguntas
+   existentes que superen ese límite.
+
 ## Levantar el juego
 
 La forma recomendada en Windows es ejecutar:

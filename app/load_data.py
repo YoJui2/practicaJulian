@@ -9,6 +9,7 @@ import requests
 from sqlalchemy import delete
 
 from app.database import SessionLocal, engine
+from app.data_quality import MAX_QUESTION_LENGTH
 from app.models import Base, Categorization, Question, QuestionOption, Translation
 
 DATASET_URL = (
@@ -62,9 +63,9 @@ def simpleqa_row_to_fields(row) -> dict | None:
     """SimpleQA parquet: columns problem, answer, metadata {topic, urls, ...}."""
     q = row.get("problem") or row.get("question") or ""
     a = row.get("answer") or row.get("answer_alias") or ""
-    q = str(q).strip() if pd.notna(q) else ""
+    q = " ".join(str(q).split()) if pd.notna(q) else ""
     a = str(a).strip() if pd.notna(a) else ""
-    if not q or not a:
+    if not q or len(q) > MAX_QUESTION_LENGTH or not a:
         return None
 
     meta = _metadata_as_dict(row.get("metadata"))
@@ -123,9 +124,9 @@ def simpleqa_row_to_fields(row) -> dict | None:
     """Mapea Parquet SimpleQA → modelo Question (problem → question, topic → category)."""
     q = row.get("problem") or row.get("question") or ""
     a = row.get("answer") or ""
-    q = str(q).strip() if pd.notna(q) else ""
+    q = " ".join(str(q).split()) if pd.notna(q) else ""
     a = str(a).strip() if pd.notna(a) else ""
-    if not q or not a:
+    if not q or len(q) > MAX_QUESTION_LENGTH or not a:
         return None
 
     meta = _metadata_as_dict(row.get("metadata"))
@@ -156,6 +157,9 @@ def opentrivia_row_to_fields(row) -> dict | None:
     question = _clean_dataset_text(row.get("question"))
     answer = _clean_dataset_text(row.get("answer"))
     raw_choices = row.get("choices")
+
+    if not question or len(question) > MAX_QUESTION_LENGTH or not answer:
+        return None
 
     if hasattr(raw_choices, "tolist"):
         raw_choices = raw_choices.tolist()

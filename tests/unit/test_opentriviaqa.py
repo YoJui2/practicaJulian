@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
+from app.data_quality import MAX_QUESTION_LENGTH
 from app.load_data import (
     build_argument_parser,
     load_opentrivia_questions,
@@ -84,6 +85,30 @@ def test_opentrivia_row_rejects_missing_or_invalid_choices():
     }
 
     assert opentrivia_row_to_fields(row) is None
+
+
+def test_opentrivia_row_rejects_questions_over_the_character_limit():
+    row = {
+        "category": "history",
+        "question": "q" * (MAX_QUESTION_LENGTH + 1),
+        "choices": ["A", "B"],
+        "answer": "A",
+    }
+
+    assert opentrivia_row_to_fields(row) is None
+
+
+def test_opentrivia_row_accepts_question_at_the_character_limit():
+    row = {
+        "category": "history",
+        "question": "q" * MAX_QUESTION_LENGTH,
+        "choices": ["A", "B"],
+        "answer": "A",
+    }
+
+    result = opentrivia_row_to_fields(row)
+
+    assert len(result["question"]) == MAX_QUESTION_LENGTH
 
 
 def test_loader_defaults_to_opentrivia_and_keeps_simpleqa_selectable():

@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db, engine
+from app.data_quality import MAX_QUESTION_LENGTH
 from app.models import Base, Categorization, Question
 from app.categories import CATEGORIES
 from app.live_translation import translate_question
@@ -16,7 +17,7 @@ from app.translator import DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG
 
 
 class QuestionCreate(BaseModel):
-    question: str = Field(..., min_length=1)
+    question: str = Field(..., min_length=1, max_length=MAX_QUESTION_LENGTH)
     answer: str = Field(..., min_length=1)
     category: str | None = Field(None, max_length=100)
     source: str | None = Field(None, max_length=255)
@@ -169,7 +170,8 @@ def get_random_question(
             (Question.category == category_name)
             | Question.categorizations.any(
                 Categorization.category_name == category_name
-            )
+            ),
+            func.length(func.trim(Question.question)) <= MAX_QUESTION_LENGTH,
         )
         .order_by(func.random())
         .first()

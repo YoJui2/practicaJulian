@@ -1,3 +1,6 @@
+from app.data_quality import MAX_QUESTION_LENGTH
+
+
 def test_create_question_requires_question_and_answer(client):
     response = client.post("/questions", json={"question": "A question"})
 
@@ -12,6 +15,18 @@ def test_create_question_rejects_an_overly_long_category(client):
     }
 
     response = client.post("/questions", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_create_question_rejects_question_over_character_limit(client):
+    response = client.post(
+        "/questions",
+        json={
+            "question": "q" * (MAX_QUESTION_LENGTH + 1),
+            "answer": "An answer",
+        },
+    )
 
     assert response.status_code == 422
 

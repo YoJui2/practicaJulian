@@ -85,6 +85,18 @@
   will-change: transform;
 }
 
+.wheel[data-spinning='true'],
+.labels[data-spinning='true'] {
+  animation: continuous-spin 1.2s linear infinite;
+  transition: none;
+}
+
+@keyframes continuous-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .wheel::after {
   position: absolute;
   inset: 0;
@@ -202,6 +214,11 @@
   .wheel,
   .labels {
     transition-duration: 0.01ms;
+  }
+
+  .wheel[data-spinning='true'],
+  .labels[data-spinning='true'] {
+    animation: none;
   }
 
   .segmentLabel,

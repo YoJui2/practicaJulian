@@ -1,4 +1,5 @@
 from app.load_data import _metadata_as_dict, simpleqa_row_to_fields
+from app.data_quality import MAX_QUESTION_LENGTH
 
 
 def test_metadata_as_dict_reads_json_text():
@@ -46,3 +47,21 @@ def test_simpleqa_row_to_fields_limits_long_category_and_source():
 
     assert len(result["category"]) == 100
     assert len(result["source"]) == 255
+
+
+def test_simpleqa_row_rejects_questions_over_the_character_limit():
+    row = {
+        "problem": "q" * (MAX_QUESTION_LENGTH + 1),
+        "answer": "An answer",
+    }
+
+    assert simpleqa_row_to_fields(row) is None
+
+
+def test_simpleqa_row_accepts_question_at_the_character_limit():
+    row = {
+        "problem": "q" * MAX_QUESTION_LENGTH,
+        "answer": "An answer",
+    }
+
+    assert len(simpleqa_row_to_fields(row)["question"]) == MAX_QUESTION_LENGTH

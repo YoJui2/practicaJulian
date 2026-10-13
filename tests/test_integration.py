@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.data_quality import MAX_QUESTION_LENGTH
 from app.main import app
 from app.models import Categorization, Question, QuestionOption
 
@@ -149,6 +150,38 @@ def test_random_question_uses_category_and_returns_api_format(client):
         "options": ["Mars", "Venus"],
         "lang": "en",
     }
+
+
+def test_random_question_skips_legacy_questions_over_the_character_limit(client):
+    valid_response = client.post(
+        "/questions",
+        json={
+            "question": "Which planet is known as the Red Planet?",
+            "answer": "Mars",
+            "category": "ciencia",
+        },
+    )
+    assert valid_response.status_code == 201
+
+    db_generator = app.dependency_overrides[get_db]()
+    db: Session = next(db_generator)
+    try:
+        db.add(
+            Question(
+                question="q" * (MAX_QUESTION_LENGTH + 1),
+                answer="An answer",
+                category="ciencia",
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    response = client.get("/questions/random/ciencia?lang=en")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == valid_response.json()["id"]
 
 
 def test_random_question_returns_a_clear_error_for_empty_category(client):

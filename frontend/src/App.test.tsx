@@ -41,11 +41,14 @@ function mockQuestionResponse(fetchMock: ReturnType<typeof vi.fn>) {
 
 async function spinWheel(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Girar la ruleta' }))
+  await waitFor(() => {
+    expect(screen.getByTestId('wheel-disc')).toHaveAttribute(
+      'data-settling',
+      'true',
+    )
+  })
   fireEvent.transitionEnd(screen.getByTestId('wheel-disc'), {
     propertyName: 'transform',
-  })
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0))
   })
   await waitFor(() => {
     expect(screen.queryByTestId('wheel-disc')).not.toBeInTheDocument()
@@ -139,13 +142,15 @@ describe('trivia game', () => {
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'Girar la ruleta' }))
 
-    const wheel = screen.getByTestId('wheel-disc')
-    const firstTarget = wheel.style.transform
-    fireEvent.transitionEnd(wheel, { propertyName: 'transform' })
-
-    expect(screen.getByTestId('wheel-disc').style.transform).not.toBe(
-      firstTarget,
+    expect(screen.getByTestId('wheel-disc')).toHaveAttribute(
+      'data-spinning',
+      'true',
     )
+    expect(screen.getByTestId('wheel-disc')).toHaveAttribute(
+      'data-settling',
+      'false',
+    )
+    expect(screen.getByRole('button', { name: 'Girando…' })).toBeDisabled()
 
     await act(async () => {
       resolveFetch({
@@ -163,6 +168,12 @@ describe('trivia game', () => {
       } as Response)
     })
 
+    await waitFor(() => {
+      expect(screen.getByTestId('wheel-disc')).toHaveAttribute(
+        'data-settling',
+        'true',
+      )
+    })
     fireEvent.transitionEnd(screen.getByTestId('wheel-disc'), {
       propertyName: 'transform',
     })

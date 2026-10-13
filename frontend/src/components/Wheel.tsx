@@ -7,6 +7,7 @@ interface WheelProps {
   sectors: readonly WheelSector[]
   rotation: number
   spinning: boolean
+  settling: boolean
   onSpin: () => void
   onSpinEnd: () => void
 }
@@ -27,6 +28,7 @@ export function Wheel({
   sectors,
   rotation,
   spinning,
+  settling,
   onSpin,
   onSpinEnd,
 }: WheelProps) {
@@ -43,6 +45,8 @@ export function Wheel({
           <div
             className={styles.wheel}
             data-testid="wheel-disc"
+            data-spinning={spinning && !settling}
+            data-settling={settling}
             role="img"
             aria-label={`Ruleta con ${sectors.length} categorías`}
             onTransitionEnd={(event) => {
@@ -69,6 +73,7 @@ export function Wheel({
                 '--wheel-rotation': `${rotation}deg`,
               } as CSSProperties
             }
+            data-spinning={spinning && !settling}
           >
             {sectors.map((sector, index) => {
               const angle = index * segmentAngle + segmentAngle / 2
